@@ -5,7 +5,7 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 FROM veupathdb/alpine-dev-base:jdk-15 AS prep
 
-LABEL service="eda-subsetting-build"
+LABEL service="eda-user-build"
 
 ARG GITHUB_USERNAME
 ARG GITHUB_TOKEN
@@ -37,7 +37,7 @@ RUN mkdir -p vendor \
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 FROM foxcapades/alpine-oracle:1.3
 
-LABEL service="eda-subsetting"
+LABEL service="eda-user"
 
 ENV JAVA_HOME=/opt/jdk \
     PATH=/opt/jdk/bin:$PATH
