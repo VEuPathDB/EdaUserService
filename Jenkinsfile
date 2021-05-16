@@ -8,6 +8,6 @@ node('centos8') {
   checkout scm
 
   def builder = new Builder(this)
-  builder.buildContainers([[name: 'eda-subsetting']])
+  builder.buildContainers([[name: 'eda-user']])
 
 }
