@@ -83,7 +83,15 @@ public class Entity {
   public String getWithClauseName() {
     return id;
   }
+<<<<<<< HEAD
   
+=======
+
+  /**
+   * @return primary key column names of this entities ancestors,
+   * ordered by parent first, then grandparent, etc. until the root entity
+   */
+>>>>>>> template/master
   public List<String> getAncestorPkColNames() {
     return Collections.unmodifiableList(ancestorPkColNames);
   }
@@ -112,9 +120,15 @@ public class Entity {
     return "id: " + getId() + " name: " + getDisplayName() + " (" + super.toString() + ")";
   }
   
+<<<<<<< HEAD
   public String getAllPksSelectList(String entityTableName, String ancestorTableName) {
     List<String> selectColsList = new ArrayList<>();
     selectColsList.add(entityTableName + "." + getPKColName());
+=======
+  public String getAllPksSelectList(String ancestorTableName) {
+    List<String> selectColsList = new ArrayList<>();
+    selectColsList.add(ancestorTableName + "." + getPKColName());
+>>>>>>> template/master
     for (String name : getAncestorPkColNames())
       selectColsList.add(ancestorTableName + "." + name);
     return String.join(", ", selectColsList);

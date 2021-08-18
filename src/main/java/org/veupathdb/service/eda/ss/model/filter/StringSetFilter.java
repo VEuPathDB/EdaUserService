@@ -7,7 +7,11 @@ import org.veupathdb.service.eda.ss.model.RdbmsColumnNames;
 import static org.gusdb.fgputil.FormatUtil.NL;
 
 
+<<<<<<< HEAD
 public class StringSetFilter extends Filter {
+=======
+public class StringSetFilter extends SingleValueFilter {
+>>>>>>> template/master
 
   private List<String> stringSet;
   
@@ -17,7 +21,11 @@ public class StringSetFilter extends Filter {
   }
 
   @Override
+<<<<<<< HEAD
   public String getAndClausesSql() {
+=======
+  public String getFilteringAndClausesSql() {
+>>>>>>> template/master
     return "  AND " + RdbmsColumnNames.STRING_VALUE_COL_NAME + " IN ('" + String.join("', '", stringSet) + "')" + NL;
   }
 

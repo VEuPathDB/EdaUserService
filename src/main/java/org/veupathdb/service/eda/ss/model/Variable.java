@@ -1,17 +1,23 @@
 package org.veupathdb.service.eda.ss.model;
 
+<<<<<<< HEAD
 import org.gusdb.fgputil.FormatUtil;
 import org.gusdb.fgputil.functional.FunctionalInterfaces.FunctionWithException;
 
 import java.sql.ResultSet;
 
 public class Variable {
+=======
+public class Variable {
+
+>>>>>>> template/master
   private final String providerLabel;
   private final String id;
   private final Entity entity;
   private final VariableType type;
   private final VariableDataShape dataShape;
   private final VariableDisplayType displayType;
+<<<<<<< HEAD
   private final boolean hasValues;
   private final String units;
   private final Integer precision;
@@ -63,6 +69,14 @@ public class Variable {
       }
     }
   }
+=======
+  private final String displayName;
+  private final String parentId;
+  private final String definition;
+  private final boolean hasValues;
+
+  private final Integer displayOrder;
+>>>>>>> template/master
 
   private final static String CONT_STR = "continuous";
   private final static String CAT_STR = "categorical";
@@ -126,6 +140,7 @@ public class Variable {
   }
 
   /*
+<<<<<<< HEAD
   Construct a variable that does have values
    */
   public Variable(String providerLabel, String id, Entity entity, VariableType type, VariableDataShape dataShape,
@@ -151,11 +166,18 @@ public class Variable {
     this.precision = precision;
     this.displayName = displayName;
     this.parentId = parentId;
+=======
+  Construct a variable that has values
+   */
+  public Variable(String providerLabel, String id, Entity entity, VariableType type, VariableDataShape shape, VariableDisplayType displayType, String displayName, Integer displayOrder, String parentId, String definition) {
+	  this(providerLabel, id, entity, true, type, shape, displayType, displayName, displayOrder, parentId, definition);
+>>>>>>> template/master
   }
 
   /*
   Construct a variable that does not have values
    */
+<<<<<<< HEAD
   public Variable(String providerLabel, String id, Entity entity, String displayName, String parentId) {
     this.providerLabel = providerLabel;
     this.id = id;
@@ -171,6 +193,26 @@ public class Variable {
 
   }
 
+=======
+  public Variable(String providerLabel, String id, Entity entity, VariableDisplayType displayType, String displayName, Integer displayOrder, String parentId) {
+	  this(providerLabel, id, entity, false, null, null, displayType, displayName, displayOrder, parentId, null);
+  }
+
+  private Variable(String providerLabel, String id, Entity entity, boolean hasValues, VariableType type, VariableDataShape shape, VariableDisplayType displayType, String displayName, Integer displayOrder, String parentId, String definition) {
+	    this.providerLabel = providerLabel;
+	    this.id = id;
+	    this.entity = entity;
+	    this.type = type;
+	    this.dataShape = shape;
+	    this.displayType = displayType;
+	    this.hasValues = hasValues;
+	    this.displayName = displayName;
+	    this.displayOrder = displayOrder;
+	    this.parentId = parentId;
+	    this.definition= definition;
+	  }
+  
+>>>>>>> template/master
   public String getProviderLabel() {
     return providerLabel;
   }
@@ -179,6 +221,17 @@ public class Variable {
     return id;
   }
 
+<<<<<<< HEAD
+=======
+  public boolean getHasValues() {
+	return hasValues;
+  }
+
+  public VariableDisplayType getDisplayType() {
+	return displayType;
+  }
+
+>>>>>>> template/master
   public String getEntityId() {
     return entity.getId();
   } 
@@ -191,6 +244,7 @@ public class Variable {
     return dataShape;
   }
   
+<<<<<<< HEAD
   public String getUnits() {
     return units;
   }
@@ -199,6 +253,8 @@ public class Variable {
     return precision;
   }
 
+=======
+>>>>>>> template/master
   public String getDisplayName() {
     return displayName;
   }
@@ -210,4 +266,16 @@ public class Variable {
   public VariableType getType() {
     return type;
   }
+<<<<<<< HEAD
+=======
+  
+  public String getDefinition() {
+		return definition;
+	}
+
+	public Integer getDisplayOrder() {
+		return displayOrder;
+	}
+
+>>>>>>> template/master
 }

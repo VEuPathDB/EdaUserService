@@ -8,7 +8,11 @@ import org.veupathdb.service.eda.ss.model.Entity;
 import static org.gusdb.fgputil.FormatUtil.NL;
 import static org.veupathdb.service.eda.ss.model.RdbmsColumnNames.DATE_VALUE_COL_NAME;
 
+<<<<<<< HEAD
 public class DateSetFilter extends Filter {
+=======
+public class DateSetFilter extends SingleValueFilter {
+>>>>>>> template/master
 
   private List<LocalDateTime> dateSet;
 
@@ -19,7 +23,11 @@ public class DateSetFilter extends Filter {
   }
 
   @Override
+<<<<<<< HEAD
   public String getAndClausesSql() {
+=======
+  public String getFilteringAndClausesSql() {
+>>>>>>> template/master
     List<String> dateStrings = new ArrayList<>();
     for (LocalDateTime date : dateSet) dateStrings.add(DateRangeFilter.dbDateTimeIsoValue(date));
     return "  AND " + DATE_VALUE_COL_NAME + " IN (" + String.join(", ", dateStrings) + ")" + NL;

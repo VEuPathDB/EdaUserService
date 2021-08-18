@@ -1,3 +1,10 @@
+<<<<<<< HEAD
+=======
+
+-- use oracle syntax throughout execution
+SET DATABASE SQL SYNTAX ORA TRUE;
+
+>>>>>>> template/master
 -- the EDA service doesn't need to know much about the Study, because the WDK will serve that data
 -- the abbrev would be used in the name of the tall and ancestors tables
 -- the study_id is a stable ID
@@ -39,6 +46,7 @@ ALTER TABLE EntityTypeGraph
 --  where XXXXX is the study internal_abbrev and YYYYY is the entity's internal_abbrev
 --------------------------------------------------------------------------------------------------
 create table AttributeGraph_ds2324_Hshld (
+<<<<<<< HEAD
   stable_id varchar(30),
   ontology_term_id integer,
   parent_stable_id varchar(30),
@@ -53,6 +61,34 @@ create table AttributeGraph_ds2324_Hshld (
   unit_ontology_term_id integer,
   precision integer,
   PRIMARY KEY (stable_id)
+=======
+STABLE_ID                      varchar(255) not null,
+PARENT_STABLE_ID               varchar(255),
+PROVIDER_LABEL                 varchar(1500),
+DISPLAY_NAME                   varchar(1500),
+DEFINITION                     varchar(4000),
+VOCABULARY                     varchar(1500),
+DISPLAY_TYPE                   varchar(20),
+DISPLAY_ORDER                  integer,
+DISPLAY_RANGE_MIN              varchar(16),
+DISPLAY_RANGE_MAX              varchar(16),
+RANGE_MIN                      varchar(128),
+RANGE_MAX                      varchar(128),
+BIN_WIDTH_OVERRIDE             varchar(16),
+BIN_WIDTH_COMPUTED             varchar(128),
+IS_TEMPORAL                    integer,
+IS_FEATURED                    integer,
+IS_MERGE_KEY                   integer,
+IS_REPEATED                    integer,
+HAS_VALUES                     integer,
+DATA_TYPE                      varchar(10),
+DISTINCT_VALUES_COUNT          integer,
+IS_MULTI_VALUED                integer,
+DATA_SHAPE                     varchar(30),
+UNIT                           varchar(30),
+PRECISION                      integer,
+PRIMARY KEY (stable_id)
+>>>>>>> template/master
 );
 
 create table AttributeValue_ds2324_Hshld (
@@ -76,6 +112,7 @@ create table Ancestors_ds2324_Hshld (
 
 -----------------------------------------------------------------------------
 create table AttributeGraph_ds2324_HshldObsrvtn (
+<<<<<<< HEAD
   stable_id varchar(30),
   ontology_term_id integer,
   parent_stable_id varchar(30),
@@ -90,6 +127,34 @@ create table AttributeGraph_ds2324_HshldObsrvtn (
   unit_ontology_term_id integer,
   precision integer,
   PRIMARY KEY (stable_id)
+=======
+STABLE_ID                      varchar(255) not null,
+PARENT_STABLE_ID               varchar(255),
+PROVIDER_LABEL                 varchar(1500),
+DISPLAY_NAME                   varchar(1500),
+DEFINITION                     varchar(4000),
+VOCABULARY                     varchar(1500),
+DISPLAY_TYPE                   varchar(20),
+DISPLAY_ORDER                  integer,
+DISPLAY_RANGE_MIN              varchar(16),
+DISPLAY_RANGE_MAX              varchar(16),
+RANGE_MIN                      varchar(128),
+RANGE_MAX                      varchar(128),
+BIN_WIDTH_OVERRIDE             varchar(16),
+BIN_WIDTH_COMPUTED             varchar(128),
+IS_TEMPORAL                    integer,
+IS_FEATURED                    integer,
+IS_MERGE_KEY                   integer,
+IS_REPEATED                    integer,
+HAS_VALUES                     integer,
+DATA_TYPE                      varchar(10),
+DISTINCT_VALUES_COUNT          integer,
+IS_MULTI_VALUED                integer,
+DATA_SHAPE                     varchar(30),
+UNIT                           varchar(30),
+PRECISION                      integer,
+PRIMARY KEY (stable_id)
+>>>>>>> template/master
 );
 
 create table AttributeValue_ds2324_HshldObsrvtn (
@@ -114,6 +179,7 @@ create table Ancestors_ds2324_HshldObsrvtn (
 
 -----------------------------------------------------------------------------
 create table AttributeGraph_ds2324_Prtcpnt (
+<<<<<<< HEAD
   stable_id varchar(30),
   ontology_term_id integer,
   parent_stable_id varchar(30),
@@ -128,6 +194,34 @@ create table AttributeGraph_ds2324_Prtcpnt (
   unit_ontology_term_id integer,
   precision integer,
   PRIMARY KEY (stable_id)
+=======
+STABLE_ID                      varchar(255) not null,
+PARENT_STABLE_ID               varchar(255),
+PROVIDER_LABEL                 varchar(1500),
+DISPLAY_NAME                   varchar(1500),
+DEFINITION                     varchar(4000),
+VOCABULARY                     varchar(1500),
+DISPLAY_TYPE                   varchar(20),
+DISPLAY_ORDER                  integer,
+DISPLAY_RANGE_MIN              varchar(16),
+DISPLAY_RANGE_MAX              varchar(16),
+RANGE_MIN                      varchar(128),
+RANGE_MAX                      varchar(128),
+BIN_WIDTH_OVERRIDE             varchar(16),
+BIN_WIDTH_COMPUTED             varchar(128),
+IS_TEMPORAL                    integer,
+IS_FEATURED                    integer,
+IS_MERGE_KEY                   integer,
+IS_REPEATED                    integer,
+HAS_VALUES                     integer,
+DATA_TYPE                      varchar(10),
+DISTINCT_VALUES_COUNT          integer,
+IS_MULTI_VALUED                integer,
+DATA_SHAPE                     varchar(30),
+UNIT                           varchar(30),
+PRECISION                      integer,
+PRIMARY KEY (stable_id)
+>>>>>>> template/master
 );
 create table AttributeValue_ds2324_Prtcpnt (
   prtcpnt_stable_id varchar(30),
@@ -151,6 +245,7 @@ create table Ancestors_ds2324_Prtcpnt (
 
 -----------------------------------------------------------------------------
 create table AttributeGraph_ds2324_PrtcpntObsrvtn (
+<<<<<<< HEAD
   stable_id varchar(30),
   ontology_term_id integer,
   parent_stable_id varchar(30),
@@ -165,6 +260,34 @@ create table AttributeGraph_ds2324_PrtcpntObsrvtn (
   unit_ontology_term_id integer,
   precision integer,
   PRIMARY KEY (stable_id)
+=======
+STABLE_ID                      varchar(255) not null,
+PARENT_STABLE_ID               varchar(255),
+PROVIDER_LABEL                 varchar(1500),
+DISPLAY_NAME                   varchar(1500),
+DEFINITION                     varchar(4000),
+VOCABULARY                     varchar(1500),
+DISPLAY_TYPE                   varchar(20),
+DISPLAY_ORDER                  integer,
+DISPLAY_RANGE_MIN              varchar(16),
+DISPLAY_RANGE_MAX              varchar(16),
+RANGE_MIN                      varchar(128),
+RANGE_MAX                      varchar(128),
+BIN_WIDTH_OVERRIDE             varchar(16),
+BIN_WIDTH_COMPUTED             varchar(128),
+IS_TEMPORAL                    integer,
+IS_FEATURED                    integer,
+IS_MERGE_KEY                   integer,
+IS_REPEATED                    integer,
+HAS_VALUES                     integer,
+DATA_TYPE                      varchar(10),
+DISTINCT_VALUES_COUNT          integer,
+IS_MULTI_VALUED                integer,
+DATA_SHAPE                     varchar(30),
+UNIT                           varchar(30),
+PRECISION                      integer,
+PRIMARY KEY (stable_id)
+>>>>>>> template/master
 );
 
 create table AttributeValue_ds2324_PrtcpntObsrvtn (
@@ -189,6 +312,7 @@ create table Ancestors_ds2324_PrtcpntObsrvtn (
 );
 
 create table AttributeGraph_ds2324_Smpl (
+<<<<<<< HEAD
   stable_id varchar(30),
   ontology_term_id integer,
   parent_stable_id varchar(30),
@@ -226,3 +350,61 @@ create table AttributeGraph_ds2324_Trtmnt (
 
 
 
+=======
+STABLE_ID                      varchar(255) not null,
+PARENT_STABLE_ID               varchar(255),
+PROVIDER_LABEL                 varchar(1500),
+DISPLAY_NAME                   varchar(1500),
+DEFINITION                     varchar(4000),
+VOCABULARY                     varchar(1500),
+DISPLAY_TYPE                   varchar(20),
+DISPLAY_ORDER                  integer,
+DISPLAY_RANGE_MIN              varchar(16),
+DISPLAY_RANGE_MAX              varchar(16),
+RANGE_MIN                      varchar(128),
+RANGE_MAX                      varchar(128),
+BIN_WIDTH_OVERRIDE             varchar(16),
+BIN_WIDTH_COMPUTED             varchar(128),
+IS_TEMPORAL                    integer,
+IS_FEATURED                    integer,
+IS_MERGE_KEY                   integer,
+IS_REPEATED                    integer,
+HAS_VALUES                     integer,
+DATA_TYPE                      varchar(10),
+DISTINCT_VALUES_COUNT          integer,
+IS_MULTI_VALUED                integer,
+DATA_SHAPE                     varchar(30),
+UNIT                           varchar(30),
+PRECISION                      integer,
+PRIMARY KEY (stable_id)
+);
+
+create table AttributeGraph_ds2324_Trtmnt (
+STABLE_ID                      varchar(255) not null,
+PARENT_STABLE_ID               varchar(255),
+PROVIDER_LABEL                 varchar(1500),
+DISPLAY_NAME                   varchar(1500),
+DEFINITION                     varchar(4000),
+VOCABULARY                     varchar(1500),
+DISPLAY_TYPE                   varchar(20),
+DISPLAY_ORDER                  integer,
+DISPLAY_RANGE_MIN              varchar(16),
+DISPLAY_RANGE_MAX              varchar(16),
+RANGE_MIN                      varchar(128),
+RANGE_MAX                      varchar(128),
+BIN_WIDTH_OVERRIDE             varchar(16),
+BIN_WIDTH_COMPUTED             varchar(128),
+IS_TEMPORAL                    integer,
+IS_FEATURED                    integer,
+IS_MERGE_KEY                   integer,
+IS_REPEATED                    integer,
+HAS_VALUES                     integer,
+DATA_TYPE                      varchar(10),
+DISTINCT_VALUES_COUNT          integer,
+IS_MULTI_VALUED                integer,
+DATA_SHAPE                     varchar(30),
+UNIT                           varchar(30),
+PRECISION                      integer,
+PRIMARY KEY (stable_id)
+);
+>>>>>>> template/master

@@ -1,5 +1,6 @@
 package org.veupathdb.service.eda.ss.service;
 
+<<<<<<< HEAD
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +23,43 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+=======
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import javax.sql.DataSource;
+import javax.ws.rs.InternalServerErrorException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.veupathdb.service.eda.generated.model.APIEntity;
+import org.veupathdb.service.eda.generated.model.APIFilter;
+import org.veupathdb.service.eda.generated.model.APIFilterImpl;
+import org.veupathdb.service.eda.generated.model.APINumberRangeFilter;
+import org.veupathdb.service.eda.generated.model.APINumberRangeFilterImpl;
+import org.veupathdb.service.eda.generated.model.APIStringSetFilter;
+import org.veupathdb.service.eda.generated.model.APIStringSetFilterImpl;
+import org.veupathdb.service.eda.generated.model.APIStudyDetail;
+import org.veupathdb.service.eda.generated.model.HistogramBin;
+import org.veupathdb.service.eda.generated.model.ValueSpec;
+import org.veupathdb.service.eda.ss.Resources;
+import org.veupathdb.service.eda.ss.model.Entity;
+import org.veupathdb.service.eda.ss.model.FiltersForTesting;
+import org.veupathdb.service.eda.ss.model.Study;
+import org.veupathdb.service.eda.ss.model.TestModel;
+import org.veupathdb.service.eda.ss.model.VariableWithValues;
+import org.veupathdb.service.eda.ss.model.distribution.DistributionResult;
+import org.veupathdb.service.eda.ss.model.filter.Filter;
+import org.veupathdb.service.eda.ss.stubdb.StubDb;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+>>>>>>> template/master
 
 public class StudiesTest {
 
@@ -72,7 +110,11 @@ public class StudiesTest {
     numberFilter.setVariableId(_model.weight.getId());
     afs.add(numberFilter);
     
+<<<<<<< HEAD
     Studies.constructFiltersFromAPIFilters(_model.study, afs);
+=======
+    RequestBundle.constructFiltersFromAPIFilters(_model.study, afs);
+>>>>>>> template/master
     
     assertEquals(2, afs.size());
   }
@@ -91,6 +133,7 @@ public class StudiesTest {
 
       afs.add(stringFilter);
 
+<<<<<<< HEAD
       // illegit... can't be the superclass
       APIFilter nakedFilter = new APIFilterImpl();
       nakedFilter.setEntityId(_model.observation.getId());
@@ -100,6 +143,17 @@ public class StudiesTest {
       Studies.constructFiltersFromAPIFilters(_model.study, afs);
     });
   }
+=======
+      // an invalid one... can't be the superclass
+      APIFilter nakedFilter = new APIFilterImpl();
+      nakedFilter.setEntityId(_model.observation.getId());
+      afs.add(nakedFilter);
+
+      RequestBundle.constructFiltersFromAPIFilters(_model.study, afs);
+    });
+  }
+
+>>>>>>> template/master
   @Test
   @DisplayName("Test variable distribution - no filters")
   void testVariableDistributionNoFilters() throws IOException {
@@ -110,7 +164,11 @@ public class StudiesTest {
     Entity entity = study.getEntity(entityId).orElseThrow();
 
     String varId = "var_17";
+<<<<<<< HEAD
     Variable var = entity.getVariable(varId).orElseThrow();
+=======
+    VariableWithValues var = (VariableWithValues)entity.getVariable(varId).orElseThrow();
+>>>>>>> template/master
 
     List<Filter> filters = Collections.emptyList();
 
@@ -135,7 +193,11 @@ public class StudiesTest {
     Entity entity = study.getEntity(entityId).orElseThrow();
 
     String varId = "var_17";
+<<<<<<< HEAD
     Variable var = entity.getVariable(varId).orElseThrow();
+=======
+    VariableWithValues var = (VariableWithValues)entity.getVariable(varId).orElseThrow();
+>>>>>>> template/master
 
     List<Filter> filters = new ArrayList<>();
     filters.add(_filtersForTesting.houseCityFilter);
@@ -151,6 +213,7 @@ public class StudiesTest {
     testDistributionResponse(study, entity, var, filters, expectedVariableCount, expectedDistribution);
   }
 
+<<<<<<< HEAD
   private void testDistributionResponse(Study study, Entity entity, Variable var, List<Filter> filters, int expectedVariableCount, Map<String, Integer> expectedDistribution) throws IOException {
 
     // get distribution producer
@@ -168,18 +231,40 @@ public class StudiesTest {
     assertEquals(expectedVariableCount, response.getEntitiesCount());
 
     Map<String, Object> responseRows = response.getDistribution().getAdditionalProperties();
+=======
+  private void testDistributionResponse(Study study, Entity entity, VariableWithValues var,
+      List<Filter> filters, int expectedVariableCount, Map<String, Integer> expectedDistribution) throws IOException {
+
+    DistributionResult result = Studies.processDistributionRequest(
+        _dataSource, study, entity, var, filters, ValueSpec.COUNT, Optional.empty());
+
+    // check variable count
+    assertEquals(expectedVariableCount, result.getStatistics().getNumDistinctEntityRecords());
+
+    List<HistogramBin> responseRows = result.getHistogramData();
+>>>>>>> template/master
 
     // check number of distribution rows
     assertEquals(expectedDistribution.size(), responseRows.size());
 
     for (Map.Entry<String,Integer> expectedRow : expectedDistribution.entrySet()) {
+<<<<<<< HEAD
       Integer count = (Integer)responseRows.get(expectedRow.getKey()); // will throw if not integer
       // check row exists for key
       assertNotNull(count);
+=======
+      // find row in list
+      HistogramBin bin = responseRows.stream().filter(b -> b.getBinLabel().equals(expectedRow.getKey())).findFirst()
+          .orElseThrow(() -> new RuntimeException("expected bin row '" + expectedRow.getKey() + "' not found in result"));
+      int count = bin.getValue().intValue(); // will throw if not integer
+>>>>>>> template/master
       // check distribution size for key
       assertEquals(expectedRow.getValue(), count);
     }
   }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> template/master
 }

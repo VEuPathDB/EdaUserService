@@ -7,7 +7,11 @@ import org.veupathdb.service.eda.ss.model.Entity;
 import static org.gusdb.fgputil.FormatUtil.NL;
 import static org.veupathdb.service.eda.ss.model.RdbmsColumnNames.DATE_VALUE_COL_NAME;
 
+<<<<<<< HEAD
 public class DateRangeFilter extends Filter {
+=======
+public class DateRangeFilter extends SingleValueFilter {
+>>>>>>> template/master
 
   private LocalDateTime min;
   private LocalDateTime max;
@@ -19,7 +23,11 @@ public class DateRangeFilter extends Filter {
   }
 
   @Override
+<<<<<<< HEAD
   public String getAndClausesSql() {
+=======
+  public String getFilteringAndClausesSql() {
+>>>>>>> template/master
     return "  AND " + DATE_VALUE_COL_NAME + " >= " + dbDateTimeIsoValue(min) + " AND " + DATE_VALUE_COL_NAME + " <= " + dbDateTimeIsoValue(max) + NL;
   }
 

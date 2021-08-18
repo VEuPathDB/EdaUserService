@@ -13,7 +13,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.veupathdb.service.eda.ss.Resources;
+<<<<<<< HEAD
 import org.veupathdb.service.eda.ss.model.Variable.VariableType;
+=======
+>>>>>>> template/master
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,9 +45,15 @@ public class LoadStudyTest {
 
     assertEquals("GEMS_House", entity.getId());
     assertEquals("Households in the study", entity.getDescription());
+<<<<<<< HEAD
     assertEquals( "Household", entity.getDisplayName());
     assertEquals( "Households", entity.getDisplayNamePlural());
     assertEquals( "Hshld", entity.getAbbreviation());
+=======
+    assertEquals("Household", entity.getDisplayName());
+    assertEquals("Households", entity.getDisplayNamePlural());
+    assertEquals("Hshld", entity.getAbbreviation());
+>>>>>>> template/master
   }
   
   @Test
@@ -88,11 +97,17 @@ public class LoadStudyTest {
     assertEquals("GEMS_Part", var.getEntityId());
     assertEquals(Variable.VariableDataShape.CONTINUOUS, var.getDataShape());
     assertNull(var.getParentId());
+<<<<<<< HEAD
     assertEquals(2, var.getPrecision());
     assertEquals("_networth", var.getProviderLabel());
     assertEquals(VariableType.NUMBER, var.getType());
     assertEquals(Variable.VariableDisplayType.DEFAULT, var.getDisplayType());
     assertEquals("dollars", var.getUnits());
+=======
+    assertEquals("_networth", var.getProviderLabel());
+    assertEquals(VariableType.NUMBER, var.getType());
+    assertEquals(Variable.VariableDisplayType.DEFAULT, var.getDisplayType());
+>>>>>>> template/master
     assertTrue(var.getHasValues());
 
   }
@@ -109,12 +124,17 @@ public class LoadStudyTest {
 
     List<Variable> variables = VariableResultSetUtils.getEntityVariables(datasource, entity);
     
+<<<<<<< HEAD
     assertEquals(4, variables.size());
+=======
+    assertEquals(5, variables.size());
+>>>>>>> template/master
   }
   
   @Test
   @DisplayName("Load study test") 
   void testLoadStudy() {
+<<<<<<< HEAD
     
     Study study = Study.loadStudy(datasource, STUDY_ID);
     assertNotNull(study);
@@ -124,4 +144,9 @@ public class LoadStudyTest {
   
 
 
+=======
+    Study study = Study.loadStudy(datasource, STUDY_ID);
+    assertNotNull(study);
+  }
+>>>>>>> template/master
 }

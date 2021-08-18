@@ -2,7 +2,7 @@
 // Version Numbers
 //
 val coreLib   = "5.1.7"  // Container core lib version
-val edaCommon = "4.1.1"  // EDA Common version
+val edaCommon = "5.2.0"  // EDA Common version
 
 val jersey    = "2.33"   // Jersey/JaxRS version
 val jackson   = "2.12.2" // FasterXML Jackson version
@@ -39,7 +39,8 @@ dependencies {
     "vendor/fgputil-accountdb-1.0.0.jar",
     "vendor/fgputil-core-1.0.0.jar",
     "vendor/fgputil-db-1.0.0.jar",
-    "vendor/fgputil-web-1.0.0.jar"
+    "vendor/fgputil-web-1.0.0.jar",
+    "vendor/fgputil-json-1.0.0.jar"
   ))
 
   // Compatibility bridge to support the long dead log4j-1.X

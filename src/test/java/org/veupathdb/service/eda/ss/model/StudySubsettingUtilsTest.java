@@ -1,5 +1,12 @@
 package org.veupathdb.service.eda.ss.model;
 
+<<<<<<< HEAD
+=======
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.gusdb.fgputil.DelimitedDataParser;
+import org.gusdb.fgputil.FormatUtil;
+>>>>>>> template/master
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.fgputil.functional.TreeNode;
@@ -16,11 +23,20 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static org.gusdb.fgputil.FormatUtil.NL;
+<<<<<<< HEAD
+=======
+import static org.gusdb.fgputil.FormatUtil.TAB;
+>>>>>>> template/master
 import static org.junit.jupiter.api.Assertions.*;
 import static org.veupathdb.service.eda.ss.model.RdbmsColumnNames.*;
 
 public class StudySubsettingUtilsTest {
 
+<<<<<<< HEAD
+=======
+  private static final Logger LOG = LogManager.getLogger(StudySubsettingUtilsTest.class);
+
+>>>>>>> template/master
   private static TestModel _model;
   private static DataSource _dataSource;
   private static FiltersForTesting _filtersForTesting;
@@ -144,7 +160,11 @@ public class StudySubsettingUtilsTest {
     List<Filter> filters = new ArrayList<>();
     filters.add(_model.obsWeightFilter);
     filters.add(_model.obsFavNewYearsFilter);
+<<<<<<< HEAD
     String withClause = StudySubsettingUtils.generateWithClause(_model.householdObs, filters);
+=======
+    String withClause = StudySubsettingUtils.generateFilterWithClause(_model.householdObs, filters);
+>>>>>>> template/master
     String expectedWithClause = _model.householdObs.getWithClauseName() + " as (" + NL +
         "  SELECT " + _model.household.getPKColName() + ", " + _model.householdObs.getPKColName() + " FROM " + _model.householdObs.getAncestorsTableName() + NL +
         ")";
@@ -162,10 +182,17 @@ public class StudySubsettingUtilsTest {
     filters.add(_model.obsMoodFilter);
     filters.add(_model.obsFavNumberFilter);
     filters.add(_model.houseRoofFilter);
+<<<<<<< HEAD
     String withClause = StudySubsettingUtils.generateWithClause(_model.observation, filters);
  
     List<String> selectColsList = new ArrayList<>();
     selectColsList.add("t." + _model.observation.getPKColName());
+=======
+    String withClause = StudySubsettingUtils.generateFilterWithClause(_model.observation, filters);
+ 
+    List<String> selectColsList = new ArrayList<>();
+    selectColsList.add("a." + _model.observation.getPKColName());
+>>>>>>> template/master
     for (String name : _model.observation.getAncestorPkColNames()) selectColsList.add("a." + name);
     String selectCols = String.join(", ", selectColsList);
 
@@ -205,8 +232,13 @@ public class StudySubsettingUtilsTest {
   @DisplayName("Test creating a select clause for tabular report")
   void testGenerateTabularSelectClause() {
     
+<<<<<<< HEAD
     String selectClause = StudySubsettingUtils.generateTabularSelectClause(_model.observation, "t", "a");
     String expectedSelectClause = "SELECT t." + _model.observation.getPKColName() +
+=======
+    String selectClause = StudySubsettingUtils.generateTabularSelectClause(_model.observation, "a");
+    String expectedSelectClause = "SELECT a." + _model.observation.getPKColName() +
+>>>>>>> template/master
         ", a." + _model.participant.getPKColName() +
         ", a." + _model.household.getPKColName() +
         ", " + TT_VARIABLE_ID_COL_NAME + ", " + STRING_VALUE_COL_NAME + ", " + NUMBER_VALUE_COL_NAME + ", " + DATE_VALUE_COL_NAME;
@@ -260,9 +292,14 @@ public class StudySubsettingUtilsTest {
   void testGenerateTabularWhereClause() {
     
     List<Variable> vars = Arrays.asList(_model.birthDate, _model.favNumber);
+<<<<<<< HEAD
     String where = StudySubsettingUtils.generateTabularWhereClause(vars, _model.observation.getPKColName(), "t", "a");
     String expected = "WHERE t." + _model.observation.getPKColName() + " = a." + _model.observation.getPKColName() + NL +
         "AND (" + NL +
+=======
+    String where = StudySubsettingUtils.generateTabularWhereClause(vars, _model.observation.getPKColName());
+    String expected = " WHERE (" + NL +
+>>>>>>> template/master
         " " + TT_VARIABLE_ID_COL_NAME + " = '" + _model.birthDate.getId() + "' OR" + NL +
         " " + TT_VARIABLE_ID_COL_NAME + " = '" + _model.favNumber.getId() + "'" + NL +
         ")" + NL;
@@ -281,7 +318,11 @@ public class StudySubsettingUtilsTest {
     TreeNode<Entity> prunedTree = StudySubsettingUtils.pruneTree(_model.study.getEntityTree(), filters, outputEntity);
 
     List<String> from = Arrays.asList(_model.household.getWithClauseName(), _model.householdObs.getWithClauseName(), _model.observation.getWithClauseName());
+<<<<<<< HEAD
     String inClause = StudySubsettingUtils.generateInClause(prunedTree, outputEntity, "t");
+=======
+    String inClause = StudySubsettingUtils.generateSubsetInClause(prunedTree, outputEntity, "t");
+>>>>>>> template/master
     String expected = "AND t." + _model.householdObs.getPKColName() + " IN (" + NL +
         "  SELECT " + _model.householdObs.getFullPKColName() + NL +
         "  FROM " + String.join(", ", from) + NL +
@@ -302,7 +343,11 @@ public class StudySubsettingUtilsTest {
 
     TreeNode<Entity> prunedTree = StudySubsettingUtils.pruneTree(_model.study.getEntityTree(), filters, _model.participant);
 
+<<<<<<< HEAD
     String sql = StudySubsettingUtils.generateTabularSql(outputVariables, _model.participant, filters, prunedTree);
+=======
+    String sql = StudySubsettingUtils.generateTabularSqlNoReportConfig(outputVariables, _model.participant, filters, prunedTree);
+>>>>>>> template/master
     assertNotEquals("", sql);
     System.out.println("Tabular SQL:" + "\n" + sql);
   }
@@ -400,7 +445,11 @@ public class StudySubsettingUtilsTest {
     ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 
     StudySubsettingUtils.produceTabularSubset(_dataSource, study, entity,
+<<<<<<< HEAD
         variables, filters, outStream);
+=======
+        variables, filters, null, outStream);
+>>>>>>> template/master
     String[] expected = {
     "Prtcpnt_stable_id", "Hshld_stable_id", "var_17",  "var_20",
     "201", "101",     "blond",   "Martin",
@@ -431,7 +480,11 @@ public class StudySubsettingUtilsTest {
     ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 
     StudySubsettingUtils.produceTabularSubset(_dataSource, study, entity,
+<<<<<<< HEAD
         variables, filters, outStream);
+=======
+        variables, filters, null, outStream);
+>>>>>>> template/master
     String[] expected = {
     "Prtcpnt_stable_id", "Hshld_stable_id", "var_17",  "var_20",
     "201", "101",     "blond",   "Martin",
@@ -500,10 +553,17 @@ public class StudySubsettingUtilsTest {
 
     List<Filter> filters = Collections.emptyList();
 
+<<<<<<< HEAD
     Map<String, Integer> expectedDistribution = new HashMap<>(){{
       put("blond", 2);
       put("brown", 1);
       put("silver", 1);
+=======
+    Map<String, Long> expectedDistribution = new HashMap<>(){{
+      put("blond", 2L);
+      put("brown", 1L);
+      put("silver", 1L);
+>>>>>>> template/master
     }};
 
     testDistributionResponse(study, entity, var, filters, expectedDistribution);
@@ -525,14 +585,21 @@ public class StudySubsettingUtilsTest {
     filters.add(_filtersForTesting.houseCityFilter);
     filters.add(_filtersForTesting.houseObsWaterSupplyFilter);
 
+<<<<<<< HEAD
     Map<String, Integer> expectedDistribution = new HashMap<>(){{
       put("brown", 1);
       put("silver", 1);
+=======
+    Map<String, Long> expectedDistribution = new HashMap<>(){{
+      put("brown", 1L);
+      put("silver", 1L);
+>>>>>>> template/master
     }};
 
     testDistributionResponse(study, entity, var, filters, expectedDistribution);
   }
 
+<<<<<<< HEAD
   private void testDistributionResponse(Study study, Entity entity, Variable var, List<Filter> filters, Map<String, Integer> expectedDistribution) {
 
     TreeNode<Entity> prunedEntityTree = StudySubsettingUtils.pruneTree(study.getEntityTree(), filters, entity);
@@ -541,6 +608,16 @@ public class StudySubsettingUtilsTest {
         _dataSource, prunedEntityTree, entity, var, filters);
 
     Map<String,Integer> result = Functions.getMapFromList(IteratorUtil.toIterable(distributionStream.iterator()), tuple -> tuple);
+=======
+  private void testDistributionResponse(Study study, Entity entity, Variable var, List<Filter> filters, Map<String, Long> expectedDistribution) {
+
+    TreeNode<Entity> prunedEntityTree = StudySubsettingUtils.pruneTree(study.getEntityTree(), filters, entity);
+
+    Stream<TwoTuple<String,Long>> distributionStream = StudySubsettingUtils.produceVariableDistribution(
+        _dataSource, prunedEntityTree, entity, var, filters);
+
+    Map<String,Long> result = Functions.getMapFromList(IteratorUtil.toIterable(distributionStream.iterator()), tuple -> tuple);
+>>>>>>> template/master
 
     assertEquals(result, expectedDistribution);
   }
@@ -557,4 +634,69 @@ public class StudySubsettingUtilsTest {
     return filters;
   }
 
+<<<<<<< HEAD
+=======
+  @Test
+  @DisplayName("Test tabular results without vars containing no nulls")
+  void testTabularResultsNoVars() {
+    testTabularResults(Arrays.asList());
+  }
+
+  @Test
+  @DisplayName("Test tabular results with vars containing data for all rows")
+  void testTabularResultsVarsWithData() {
+    testTabularResults(Arrays.asList(_model.haircolor, _model.shoesize));
+  }
+
+  @Test
+  @DisplayName("Test tabular results with vars containing missing data for one var")
+  void testTabularResultsVarsWithMissingData() {
+    testTabularResults(Arrays.asList(_model.networth, _model.shoesize));
+  }
+
+  @Test
+  @DisplayName("Test tabular results with vars containing missing data for some rows")
+  void testTabularResultsVarsWithPartialData() {
+    testTabularResults(Arrays.asList(_model.earsize, _model.shoesize));
+  }
+  private void testTabularResults(List<Variable> requestedVars) {
+    Entity entity = _model.participant;
+    List<Map<String,String>> results = getTabularOutputRows(entity, requestedVars);
+
+    for (Map<String,String> row : results) {
+      LOG.info(FormatUtil.prettyPrint(row, FormatUtil.Style.SINGLE_LINE));
+    }
+    // test number of results; should always be the same regardless of var data (PKs always provided)
+    assertEquals(4, results.size());
+
+    Map<String,String> firstRow = results.iterator().next();
+
+    // make sure results have cols for entity PK and ancestor PKs
+    assertTrue(firstRow.containsKey(entity.getPKColName()));
+    for (String ancestorPk : entity.getAncestorPkColNames()) {
+      assertTrue(firstRow.containsKey(ancestorPk));
+    }
+
+    // make sure results have cols for all requested rows
+    for (Variable var : requestedVars) {
+      assertTrue(firstRow.containsKey(var.getId()));
+    }
+  }
+
+  private List<Map<String,String>> getTabularOutputRows(Entity entity, List<Variable> requestedVars) {
+    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    StudySubsettingUtils.produceTabularSubset(_dataSource, _model.study, entity, requestedVars, 
+    		Collections.emptyList(), null, buffer);
+    Scanner scanner = new Scanner(buffer.toString());
+    if (!scanner.hasNextLine()) {
+      throw new RuntimeException("Tabular output did not contain a header row.");
+    }
+    DelimitedDataParser parser = new DelimitedDataParser(scanner.nextLine(), TAB, true);
+    List<Map<String,String>> rows = new ArrayList<>();
+    while(scanner.hasNextLine()) {
+      rows.add(parser.parseLine(scanner.nextLine()));
+    }
+    return rows;
+  }
+>>>>>>> template/master
 }

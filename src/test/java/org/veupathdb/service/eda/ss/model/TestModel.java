@@ -10,7 +10,10 @@ import java.util.Map;
 
 import org.gusdb.fgputil.functional.TreeNode;
 import org.veupathdb.service.eda.ss.model.Variable.VariableDataShape;
+<<<<<<< HEAD
 import org.veupathdb.service.eda.ss.model.Variable.VariableType;
+=======
+>>>>>>> template/master
 import org.veupathdb.service.eda.ss.model.filter.DateRangeFilter;
 import org.veupathdb.service.eda.ss.model.filter.DateSetFilter;
 import org.veupathdb.service.eda.ss.model.filter.Filter;
@@ -44,6 +47,10 @@ public class TestModel {
   public Variable mood;
   public Variable haircolor;
   public Variable networth;
+<<<<<<< HEAD
+=======
+  public Variable earsize;
+>>>>>>> template/master
   public Variable waterSupply;
   
   public Filter obsWeightFilter;
@@ -56,19 +63,32 @@ public class TestModel {
   
   public TestModel() {
     createTestEntities();
+<<<<<<< HEAD
     Study.StudyOverview overview = new Study.StudyOverview("GEMS", "datasetid_2222", "555555");
+=======
+    Study.StudyOverview overview = new Study.StudyOverview("GEMS", "datasetid_2222", "ds2324");
+>>>>>>> template/master
     study = new Study(overview, constructEntityTree(), createIdMap());
     constructVariables();
     createFilters();
   }
   
   private void createTestEntities() {
+<<<<<<< HEAD
     household = new Entity("GEMS_House", "555555", "Household", "Households", "descrip", "Hshld");
     householdObs = new Entity("GEMS_HouseObs", "555555", "Household Observation", "Household Observations", "descrip", "HshldObsvtn");
     participant = new Entity("GEMS_Part", "555555", "Participant", "Participants", "descrip", "Prtcpnt");
     observation = new Entity("GEMS_PartObs", "555555", "Observation", "Observations", "descrip", "PrtcpntObsrvtn");
     sample = new Entity("GEMS_Sample", "555555", "Sample", "Samples", "descrip", "Smpl");
     treatment = new Entity("GEMS_Treat", "555555", "Treatment", "Treatments", "descrip", "Trtmnt");
+=======
+    household = new Entity("GEMS_House", "ds2324", "Household", "Households", "descrip", "Hshld");
+    householdObs = new Entity("GEMS_HouseObs", "ds2324", "Household Observation", "Household Observations", "descrip", "HshldObsvtn");
+    participant = new Entity("GEMS_Part", "ds2324", "Participant", "Participants", "descrip", "Prtcpnt");
+    observation = new Entity("GEMS_PartObs", "ds2324", "Observation", "Observations", "descrip", "PrtcpntObsrvtn");
+    sample = new Entity("GEMS_Sample", "ds2324", "Sample", "Samples", "descrip", "Smpl");
+    treatment = new Entity("GEMS_Treat", "ds2324", "Treatment", "Treatments", "descrip", "Trtmnt");
+>>>>>>> template/master
   }
   
   private Map<String, Entity> createIdMap() {
@@ -107,6 +127,7 @@ public class TestModel {
   }
   
   private void constructVariables() {
+<<<<<<< HEAD
 
     //  public Variable(String providerLabel, String id, Entity entity, VariableType type, VariableDataShape dataShape,
     //                  VariableDisplayType displayType, boolean hasValues, String units, Integer precision, String displayName, String parentId) {
@@ -150,6 +171,87 @@ public class TestModel {
             Variable.VariableDisplayType.DEFAULT, "", 1, "Roof", null);
     householdObs.addVariable(waterSupply);
 
+=======
+/*
+	public StringVariable(String providerLabel, String id, Entity entity, 
+			VariableDataShape dataShape, VariableDisplayType displayType, String displayName, Integer displayOrder, String parentId,
+			String definition, List<String> vocabulary, Boolean isTemporal, Boolean isFeatured, Boolean isMergeKey,
+			Number distinctValuesCount, Boolean isMultiValued) 
+						
+*/	  
+    roof = new StringVariable("roof", "var_10", household, VariableDataShape.CATEGORICAL,
+            Variable.VariableDisplayType.DEFAULT, "Roof", null, null,
+            "Their roof", null, null, null, null, 12, false);
+    household.addVariable(roof);
+    
+    haircolor = new StringVariable("haircolor", "var_17", participant, Variable.VariableDataShape.CATEGORICAL,
+            Variable.VariableDisplayType.DEFAULT, "Hair color", null, null,
+            "Their hair color", null, null, null, null, 21, false);
+    participant.addVariable(haircolor);
+    
+    mood  = new StringVariable("mood", "var_16", observation, VariableDataShape.CATEGORICAL,
+            Variable.VariableDisplayType.DEFAULT, "Mood", null, null,
+            "Their mood", null, null, null, null, 96, false);
+    observation.addVariable(mood);
+
+    waterSupply  = new StringVariable("waterSupply", "var_19", householdObs, VariableDataShape.CATEGORICAL,
+            Variable.VariableDisplayType.DEFAULT, "Waters supply", null, null,
+            "Their water supply", null, null, null, null, 66, false);
+    householdObs.addVariable(waterSupply);
+
+    earsize = new StringVariable("earsize", "var_18", participant, VariableDataShape.CATEGORICAL,
+			   Variable.VariableDisplayType.DEFAULT, "Roof", null, null,
+			   "Their ear size", null, null, null, null, 87, false);
+    participant.addVariable(earsize);
+    
+    /*
+	public NumberVariable(String providerLabel, String id, Entity entity, boolean isLongitude,
+			VariableDataShape dataShape, VariableDisplayType displayType, Integer displayOrder, String units, Integer precision,
+			String displayName, String parentId, String definition, List<String> vocabulary, Number displayRangeMin,
+			Number displayRangeMax, Number rangeMin, Number rangeMax, Number binWidthOverride,
+			Number binWidth, Boolean isTemporal, Boolean isFeatured, Boolean isMergeKey,
+			Number distinctValuesCount, Boolean isMultiValued) {			
+*/	  
+
+    shoesize = new NumberVariable("shoesize", "var_11", participant, false, VariableDataShape.CATEGORICAL,
+            Variable.VariableDisplayType.DEFAULT, null, "", 1, "Shoe size", null,
+            "their shoe size", null, null, null, null, null, null, null, null, null, null, 47, false);
+    participant.addVariable(shoesize);
+
+    networth = new NumberVariable("networth", "var_10", participant, false, VariableDataShape.CONTINUOUS,
+            Variable.VariableDisplayType.DEFAULT, null, "", 1, "Net worth", null,
+            "Their net worth", null, null, null, null, null, null, null, null, null, null, 875, false);
+    participant.addVariable(networth);
+
+    weight = new NumberVariable("weight", "var_12", observation, false, Variable.VariableDataShape.CONTINUOUS,
+            Variable.VariableDisplayType.DEFAULT, null, "", 1, "Weight", null,
+            "Their weight", null, null, null, null, null, null, null, null, null, null, 65, false);
+    observation.addVariable(weight);
+
+    favNumber = new NumberVariable("favNumber", "var_13", observation, false, Variable.VariableDataShape.CATEGORICAL,
+            Variable.VariableDisplayType.DEFAULT, null, "", 1, "Favorite number", null,
+            "Their favorite number", null, null, null, null, null, null, null, null, null, null, 312, false);
+    observation.addVariable(favNumber);
+    
+    /*
+    public DateVariable(String providerLabel, String id, Entity entity,
+			VariableDataShape dataShape, VariableDisplayType displayType,
+			String displayName, Integer displayOrder, String parentId, String definition, List<String> vocabulary, String displayRangeMin,
+			String displayRangeMax, String rangeMin, String rangeMax, String binWidthOverride,
+			String binWidth, Boolean isTemporal, Boolean isFeatured, Boolean isMergeKey, 
+			Number distinctValuesCount, Boolean isMultiValued)
+    */
+    birthDate = new DateVariable("birthDate", "var_14", observation, Variable.VariableDataShape.CONTINUOUS,
+            Variable.VariableDisplayType.DEFAULT, "Birth date", null, null,
+            "Their birth date", null, null, null, null, null, null, "week", 1, null, null, null, 13, false);
+    observation.addVariable(birthDate);
+    
+    favNewYears = new DateVariable("favNewYears", "var_15", observation, Variable.VariableDataShape.CATEGORICAL,
+            Variable.VariableDisplayType.DEFAULT, "Fav new years", null, null,
+            "Their fav new years", null, null, null, null, null, null, "week", 1, null, null, null, 74, false);
+    observation.addVariable(favNewYears);
+    
+>>>>>>> template/master
   }
   
   private void createFilters() {

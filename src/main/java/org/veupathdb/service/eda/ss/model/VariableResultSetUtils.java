@@ -1,14 +1,27 @@
 package org.veupathdb.service.eda.ss.model;
 
 import org.gusdb.fgputil.db.runner.SQLRunner;
+<<<<<<< HEAD
+=======
+import org.gusdb.fgputil.json.JsonUtil;
+>>>>>>> template/master
 
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+<<<<<<< HEAD
 import java.util.List;
 import org.veupathdb.service.eda.ss.Resources;
 
+=======
+import java.util.Arrays;
+import java.util.List;
+import org.veupathdb.service.eda.ss.Resources;
+import org.veupathdb.service.eda.ss.model.Variable.VariableDisplayType;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+>>>>>>> template/master
 import static org.gusdb.fgputil.FormatUtil.NL;
 import static org.veupathdb.service.eda.ss.model.RdbmsColumnNames.*;
 
@@ -29,7 +42,18 @@ class VariableResultSetUtils {
 
   static String generateStudyVariablesListSql(String variablesTableName) {
     String[] selectCols = {VARIABLE_ID_COL_NAME, VARIABLE_TYPE_COL_NAME,
+<<<<<<< HEAD
             DATA_SHAPE_COL_NAME, DISPLAY_TYPE_COL_NAME, HAS_VALUES_COL_NAME, UNITS_COL_NAME, MULTIVALUED_COL_NAME, PRECISION_COL_NAME, PROVIDER_LABEL_COL_NAME, DISPLAY_NAME_COL_NAME, VARIABLE_PARENT_ID_COL_NAME};
+=======
+            DATA_SHAPE_COL_NAME, DISPLAY_TYPE_COL_NAME, HAS_VALUES_COL_NAME, UNITS_COL_NAME, MULTIVALUED_COL_NAME, 
+            PRECISION_COL_NAME, PROVIDER_LABEL_COL_NAME, DISPLAY_NAME_COL_NAME, VARIABLE_PARENT_ID_COL_NAME,
+            DEFINITION_COL_NAME, VOCABULARY_COL_NAME, DISPLAY_ORDER_COL_NAME, DISPLAY_RANGE_MIN_COL_NAME, DISPLAY_RANGE_MAX_COL_NAME,
+            RANGE_MIN_COL_NAME, RANGE_MAX_COL_NAME, BIN_WIDTH_OVERRIDE_COL_NAME, BIN_WIDTH_COMPUTED_COL_NAME, 
+            IS_TEMPORAL_COL_NAME, IS_FEATURED_COL_NAME, IS_MERGE_KEY_COL_NAME, IS_REPEATED_COL_NAME,
+            DISTINCT_VALUES_COUNT_COL_NAME, IS_MULTI_VALUED_COL_NAME
+            };
+
+>>>>>>> template/master
 
 //    return "SELECT " + String.join(", ", selectCols) + NL
     return "SELECT distinct " + String.join(", ", selectCols) + NL  // TODO: remove hack distinct
@@ -46,8 +70,16 @@ class VariableResultSetUtils {
       String id = getRsStringNotNull(rs, VARIABLE_ID_COL_NAME);
       String displayName = getRsStringNotNull(rs, DISPLAY_NAME_COL_NAME);
       String parentId = rs.getString(VARIABLE_PARENT_ID_COL_NAME);
+<<<<<<< HEAD
       return hasValues ? createValueVarFromResultSet(rs, entity, providerLabel, id, displayName, parentId) :
               new Variable(providerLabel, id, entity, displayName, parentId);
+=======
+      VariableDisplayType displayType = Variable.VariableDisplayType.fromString(getRsStringWithDefault(rs, DISPLAY_TYPE_COL_NAME, "default"));
+
+      return hasValues ? 
+        createValueVarFromResultSet(rs, entity, providerLabel, id, displayName, parentId) :
+        new Variable(providerLabel, id, entity, displayType, displayName, rs.getInt(DISPLAY_ORDER_COL_NAME), parentId);
+>>>>>>> template/master
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -57,6 +89,7 @@ class VariableResultSetUtils {
                                               String id, String displayName, String parentId) {
 
     try {
+<<<<<<< HEAD
      return new Variable(
               providerLabel,
               id,
@@ -71,8 +104,96 @@ class VariableResultSetUtils {
       );
     }
     catch (SQLException e) {
+=======
+    	// first, parse vocabulary json string
+    	String vocabString = rs.getString(VOCABULARY_COL_NAME);
+    	List<String> vocab = rs.wasNull()? null : Arrays.asList(JsonUtil.Jackson.readValue(vocabString, String[].class));
+
+        VariableType type = VariableType.fromString(getRsStringNotNull(rs, VARIABLE_TYPE_COL_NAME));
+
+    	if (type == VariableType.NUMBER || type == VariableType.LONGITUDE) return new NumberVariable(
+                providerLabel,
+                id,
+                entity,
+                type == VariableType.LONGITUDE,
+                Variable.VariableDataShape.fromString(getRsStringNotNull(rs, DATA_SHAPE_COL_NAME)),
+                Variable.VariableDisplayType.fromString(getRsStringWithDefault(rs, DISPLAY_TYPE_COL_NAME, "default")),
+                rs.getInt(DISPLAY_ORDER_COL_NAME),
+                getRsStringWithDefault(rs, UNITS_COL_NAME, ""), 
+                getRsIntegerWithDefault(rs, PRECISION_COL_NAME, 1),
+                displayName,
+                parentId,
+                getRsStringWithDefault(rs, DEFINITION_COL_NAME, ""),
+                vocab,
+                getNumberFromStringColumn(rs.getString(DISPLAY_RANGE_MIN_COL_NAME)), 
+                getNumberFromStringColumn(rs.getString(DISPLAY_RANGE_MAX_COL_NAME)),
+                getNumberFromStringColumn(rs.getString(RANGE_MIN_COL_NAME)),
+                getNumberFromStringColumn(rs.getString(RANGE_MAX_COL_NAME)),
+                getNumberFromStringColumn(rs.getString(BIN_WIDTH_OVERRIDE_COL_NAME)),
+                getNumberFromStringColumn(rs.getString(BIN_WIDTH_COMPUTED_COL_NAME)),
+                rs.getBoolean(IS_TEMPORAL_COL_NAME),
+                rs.getBoolean(IS_FEATURED_COL_NAME),
+                rs.getBoolean(IS_MERGE_KEY_COL_NAME),
+                rs.getInt(DISTINCT_VALUES_COUNT_COL_NAME),
+                rs.getBoolean(IS_MULTI_VALUED_COL_NAME)
+        );
+    	
+    	
+    	if (type == VariableType.DATE) return new DateVariable(
+                providerLabel,
+                id,
+                entity,
+                Variable.VariableDataShape.fromString(getRsStringNotNull(rs, DATA_SHAPE_COL_NAME)),
+                Variable.VariableDisplayType.fromString(getRsStringWithDefault(rs, DISPLAY_TYPE_COL_NAME, "default")),
+                displayName,
+                rs.getInt(DISPLAY_ORDER_COL_NAME),
+                parentId,
+                getRsStringWithDefault(rs, DEFINITION_COL_NAME, ""),
+                vocab,
+                rs.getString(DISPLAY_RANGE_MIN_COL_NAME), 
+                rs.getString(DISPLAY_RANGE_MAX_COL_NAME),
+                rs.getString(RANGE_MIN_COL_NAME),
+                rs.getString(RANGE_MAX_COL_NAME),
+                rs.getString(BIN_WIDTH_OVERRIDE_COL_NAME),
+                rs.getString(BIN_WIDTH_COMPUTED_COL_NAME),
+                1,
+                rs.getBoolean(IS_TEMPORAL_COL_NAME),
+                rs.getBoolean(IS_FEATURED_COL_NAME),
+                rs.getBoolean(IS_MERGE_KEY_COL_NAME),
+                rs.getInt(DISTINCT_VALUES_COUNT_COL_NAME),
+                rs.getBoolean(IS_MULTI_VALUED_COL_NAME)
+        );
+    	
+    	return new StringVariable(
+                providerLabel,
+                id,
+                entity,
+                Variable.VariableDataShape.fromString(getRsStringNotNull(rs, DATA_SHAPE_COL_NAME)),
+                Variable.VariableDisplayType.fromString(getRsStringWithDefault(rs, DISPLAY_TYPE_COL_NAME, "default")),
+                displayName,
+                rs.getInt(DISPLAY_ORDER_COL_NAME),
+                parentId,
+                getRsStringWithDefault(rs, DEFINITION_COL_NAME, ""),
+                vocab,
+                rs.getBoolean(IS_TEMPORAL_COL_NAME),
+                rs.getBoolean(IS_FEATURED_COL_NAME),
+                rs.getBoolean(IS_MERGE_KEY_COL_NAME),
+                rs.getInt(DISTINCT_VALUES_COUNT_COL_NAME),
+                rs.getBoolean(IS_MULTI_VALUED_COL_NAME)
+        );  
+    	
+    }
+    catch (SQLException | JsonProcessingException e) {
+>>>>>>> template/master
       throw new RuntimeException("Entity:  " + entity.getId() + " variable: " + id, e);
     }
   }
 
+<<<<<<< HEAD
+=======
+  private static Number getNumberFromStringColumn(String colValue) {
+	  if (colValue == null) return null;
+	  return Float.parseFloat(colValue);
+  }
+>>>>>>> template/master
 }

@@ -5,7 +5,11 @@ import org.veupathdb.service.eda.ss.model.Entity;
 import static org.gusdb.fgputil.FormatUtil.NL;
 import static org.veupathdb.service.eda.ss.model.RdbmsColumnNames.NUMBER_VALUE_COL_NAME;
 
+<<<<<<< HEAD
 public class LongitudeRangeFilter extends Filter {
+=======
+public class LongitudeRangeFilter extends SingleValueFilter {
+>>>>>>> template/master
     private Number left;
     private Number right;
 
@@ -16,7 +20,11 @@ public class LongitudeRangeFilter extends Filter {
     }
 
     @Override
+<<<<<<< HEAD
     public String getAndClausesSql() {
+=======
+    public String getFilteringAndClausesSql() {
+>>>>>>> template/master
         float left_f = left.floatValue();
         float right_f = right.floatValue();
 
