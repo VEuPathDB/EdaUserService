@@ -59,7 +59,7 @@ securitySchemes:
         200:
           body:
             application/json:
-              type: lib.NewIdResponse
+              type: lib.AnalysisListPostResponse
     patch:
       body:
         application/json:
@@ -74,8 +74,11 @@ securitySchemes:
           200:
             body:
               application/json:
-                type: lib.SingleAnalysisResponse
+                type: lib.SingleAnalysisGetResponse
       patch:
+        body:
+          application/json:
+            type: lib.SingleAnalyisPatchRequest
         responses:
           202:
       delete:

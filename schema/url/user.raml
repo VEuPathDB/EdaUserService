@@ -1,0 +1,87 @@
+#%RAML 1.0 Library
+
+types:
+
+  UserPreferencesObject:
+    type: object
+
+  AnalysisBase:
+    additionalProperties: false
+    properties:
+      displayName: string
+      description: string
+      studyId: string
+      studyVersion: string
+      apiVersion: string
+      isPublic: boolean
+
+  AnalysisSummary:
+    additionalProperties: false
+    type: AnalysisBase
+    properties:
+      analysisId: string
+
+  AnalysisListResponse:
+    type: AnalysisSummary[]
+
+  AnalysisListPostRequest:
+    additionalProperties: false
+    type: AnalysisBase
+    properties:
+      descriptor: AnalysisDescriptor
+
+  AnalysisListPostResponse:
+    additionalProperties: false
+    properties:
+      analysisId: string
+
+  AnalysisListPatchRequest:
+    additionalProperties: false
+    properties:
+      analysisIdsToDelete: string[]
+
+  SingleAnalysisGetResponse:
+    additionalProperties: false
+    type: AnalysisBase
+    properties:
+      analysisId: string
+      descriptor: AnalysisDescriptor
+
+  SingleAnalyisPatchRequest:
+    additionalProperties: false
+    properties:
+      displayName?: string
+      description?: string
+      studyId?: string
+      studyVersion?: string
+      apiVersion?: string
+      isPublic?: boolean
+      descriptor?: AnalysisDescriptor
+
+  AnalysisDescriptor:
+    additionalProperties: false
+    properties:
+      subset:
+        properties:
+          descriptor: object[]
+          uiSettings?: object
+      computations: Computation[]
+      starredVariables: VariableSpec[]
+      dataTableColumns: VariableSpec[]
+      derivedVariables: DerivedVariable[]
+
+  Computation:
+    additionalProperties: false
+    properties:
+      computationId: string
+      displayName: string
+      descriptor: object
+      visualizations: Visualization[]
+
+  Visualization:
+    additionalProperties: false
+    properties:
+      visualizationId: string
+      displayName: string
+      descriptor: object
+
