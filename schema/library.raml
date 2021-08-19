@@ -7,131 +7,6 @@
 ################################################################################
 
 types:
-  API_Filter:
-    type: object
-    discriminator: type
-    properties:
-      entityId: string
-<<<<<<< HEAD
-      variableId: string
-=======
->>>>>>> template/master
-      type: API_FilterType
-  API_FilterType:
-    type: string
-    enum:
-      - stringSet
-      - numberSet
-      - dateSet
-      - numberRange
-      - dateRange
-      - longitudeRange
-<<<<<<< HEAD
-=======
-      - multiFilter
-  API_BooleanOperationType:
-    type: string
-    enum:
-      - intersect
-      - union
-  API_MultiFilterSubFilter:
-    type: object
-    properties:
-      variableId: string
-      stringSet: string[]
-  API_MultiFilter:
-    type: API_Filter
-    discriminatorValue: 'multiFilter'
-    properties:
-      operation: API_BooleanOperationType
-      subFilters: API_MultiFilterSubFilter[]
->>>>>>> template/master
-  API_StringSetFilter:
-    type: API_Filter
-    discriminatorValue: 'stringSet'
-    properties:
-<<<<<<< HEAD
-=======
-      variableId: string
->>>>>>> template/master
-      stringSet: string[]
-  API_NumberSetFilter:
-    type: API_Filter
-    discriminatorValue: 'numberSet'
-    properties:
-<<<<<<< HEAD
-=======
-      variableId: string
->>>>>>> template/master
-      numberSet: number[]
-  API_DateSetFilter:
-    type: API_Filter
-    discriminatorValue: 'dateSet'
-    properties:
-<<<<<<< HEAD
-=======
-      variableId: string
->>>>>>> template/master
-      dateSet: string[] # how to constrain this to a date?
-  API_NumberRangeFilter:
-    type: API_Filter
-    discriminatorValue: 'numberRange'
-    properties:
-<<<<<<< HEAD
-=======
-      variableId: string
->>>>>>> template/master
-      min: number
-      max: number
-  API_DateRangeFilter:
-    type: API_Filter
-    discriminatorValue: 'dateRange'
-    properties:
-<<<<<<< HEAD
-=======
-      variableId: string
->>>>>>> template/master
-      min: string
-      max: string
-  API_LongitudeRangeFilter:
-    type: API_Filter
-    discriminatorValue: 'longitudeRange'
-    properties:
-<<<<<<< HEAD
-=======
-      variableId: string
->>>>>>> template/master
-      left: number
-      right: number
-  VariableSpec:
-    type: object
-    additionalProperties: false
-    properties:
-      entityId: string
-      variableId: string
-  DerivationType:
-    type: string
-    enum:
-      - transform
-      - reduction
-  DerivedVariable:
-    type: VariableSpec
-    properties:
-      variableType: API_VariableType
-      variableDataShape: API_VariableDataShape
-      derivationType: DerivationType
-      functionName: string
-      inputVars: VariableSpec[]
-      config: object # TBD
-  MergedEntityTabularPostRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      studyId: string
-      filters: API_Filter[]
-      entityId: string
-      outputVariables: VariableSpec[]
-      derivedVariables: DerivedVariable[]
   EntityCountPostRequest:
     type: object
     additionalProperties: false
@@ -142,29 +17,11 @@ types:
     additionalProperties: false
     properties:
       count: integer
-<<<<<<< HEAD
-  VariableDistributionPostRequest:
-=======
   EntityTabularPostRequest:
->>>>>>> template/master
     type: object
     additionalProperties: false
     properties:
       filters: API_Filter[]
-<<<<<<< HEAD
-  VariableDistributionPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      entitiesCount:
-        type: integer
-        minimum: 0
-      distribution:
-        type: object
-        properties:
-          //: integer
-  EntityTabularPostRequest:
-=======
       outputVariableIds: string[]
       reportConfig?: API_TabularReportConfig
   EntityTabularPostResponse:
@@ -203,19 +60,10 @@ types:
       - count
       - proportion
   VariableDistributionPostRequest:
->>>>>>> template/master
     type: object
     additionalProperties: false
     properties:
       filters: API_Filter[]
-<<<<<<< HEAD
-      outputVariableIds: string[]
-  EntityTabularPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      counts: string[][]
-=======
       binSpec?: BinSpecWithRange
       valueSpec: ValueSpec
   HistogramBin:
@@ -244,7 +92,6 @@ types:
     properties:
       histogram: HistogramBin[]
       statistics: HistogramStats
->>>>>>> template/master
   StudiesGetResponse:
     type: object
     additionalProperties: false
@@ -282,15 +129,6 @@ types:
     discriminator: type
     properties:
       id: string
-<<<<<<< HEAD
-      providerLabel: string
-      displayName: string
-      parentId?: string
-      type: API_VariableType
-      isMultiValued: boolean
-      displayType: API_VariableDisplayType
-      dataShape: API_VariableDataShape
-=======
       parentId?: string
       providerLabel: string
       displayName: string
@@ -300,7 +138,6 @@ types:
       displayOrder?: number
       type: API_VariableType
       dataShape?: API_VariableDataShape
->>>>>>> template/master
   API_VariableType:
     type: string
     enum:
@@ -328,28 +165,17 @@ types:
   API_StringVariable:
     type: API_Variable
     discriminatorValue: string
-<<<<<<< HEAD
-=======
     properties:
       distinctValuesCount: number
       isTemporal: boolean
       isFeatured: boolean
       isMergeKey: boolean
       isMultiValued: boolean
->>>>>>> template/master
   API_NumberVariable:
     type: API_Variable
     discriminatorValue: number
     properties:
       units: string
-<<<<<<< HEAD
-  API_DateVariable:
-    type: API_Variable
-    discriminatorValue: date
-  API_LongitudeVariable:
-    type: API_Variable
-    discriminatorValue: longitude
-=======
       precision: number
       displayRangeMin?: number
       displayRangeMax?: number
@@ -387,5 +213,158 @@ types:
       isFeatured: boolean
       isMergeKey: boolean
       isMultiValued: boolean
->>>>>>> template/master
+  API_Filter:
+    type: object
+    discriminator: type
+    properties:
+      entityId: string
+      variableId: string
+      type: API_FilterType
+  API_FilterType:
+    type: string
+    enum:
+      - stringSet
+      - numberSet
+      - dateSet
+      - numberRange
+      - dateRange
+      - longitudeRange
+  API_StringSetFilter:
+    type: API_Filter
+    discriminatorValue: 'stringSet'
+    properties:
+      stringSet: string[]
+  API_NumberSetFilter:
+    type: API_Filter
+    discriminatorValue: 'numberSet'
+    properties:
+      numberSet: number[]
+  API_DateSetFilter:
+    type: API_Filter
+    discriminatorValue: 'dateSet'
+    properties:
+      dateSet: string[] # how to constrain this to a date?
+  API_NumberRangeFilter:
+    type: API_Filter
+    discriminatorValue: 'numberRange'
+    properties:
+      min: number
+      max: number
+  API_DateRangeFilter:
+    type: API_Filter
+    discriminatorValue: 'dateRange'
+    properties:
+      min: string
+      max: string
+  API_LongitudeRangeFilter:
+    type: API_Filter
+    discriminatorValue: 'longitudeRange'
+    properties:
+      left: number
+      right: number
+  VariableSpec:
+    type: object
+    additionalProperties: false
+    properties:
+      entityId: string
+      variableId: string
+  DerivationType:
+    type: string
+    enum:
+      - transform
+      - reduction
+  DerivedVariable:
+    type: VariableSpec
+    properties:
+      variableType: API_VariableType
+      variableDataShape: API_VariableDataShape
+      derivationType: DerivationType
+      functionName: string
+      inputVars: VariableSpec[]
+      config: object # TBD
+  MergedEntityTabularPostRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      studyId: string
+      filters: API_Filter[]
+      entityId: string
+      outputVariables: VariableSpec[]
+      derivedVariables: DerivedVariable[]
+  UserPreferencesObject: object
+  AnalysisBase:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName: string
+      description: string
+      studyId: string
+      studyVersion: string
+      apiVersion: string
+      isPublic: boolean
+  AnalysisSummary:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      analysisId: string
+  AnalysisListPostRequest:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      descriptor: AnalysisDescriptor
+  AnalysisListPostResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisId: string
+  AnalysisListPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisIdsToDelete: string[]
+  SingleAnalysisGetResponse:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      analysisId: string
+      descriptor: AnalysisDescriptor
+  SingleAnalyisPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName?: string
+      description?: string
+      studyId?: string
+      studyVersion?: string
+      apiVersion?: string
+      isPublic?: boolean
+      descriptor?: AnalysisDescriptor
+  AnalysisDescriptor:
+    type: object
+    additionalProperties: false
+    properties:
+      subset:
+        type: object
+        properties:
+          descriptor: object[]
+          uiSettings?: object
+      computations: Computation[]
+      starredVariables: VariableSpec[]
+      dataTableColumns: VariableSpec[]
+      derivedVariables: DerivedVariable[]
+  Computation:
+    type: object
+    additionalProperties: false
+    properties:
+      computationId: string
+      displayName: string
+      descriptor: object
+      visualizations: Visualization[]
+  Visualization:
+    type: object
+    additionalProperties: false
+    properties:
+      visualizationId: string
+      displayName: string
+      descriptor: object
 

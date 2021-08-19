@@ -1,5 +1,7 @@
-package org.veupathdb.service.eda.ss;
+package org.veupathdb.service.eda.us;
 
+import org.apache.logging.log4j.core.tools.picocli.CommandLine;
+import org.apache.logging.log4j.core.tools.picocli.CommandLine.Option;
 import org.gusdb.fgputil.db.slowquery.QueryLogConfig;
 import org.gusdb.fgputil.db.slowquery.QueryLogger;
 import org.veupathdb.lib.container.jaxrs.config.Options;
@@ -38,5 +40,4 @@ public class Main extends Server {
       return false;
     }
   }
-
 }

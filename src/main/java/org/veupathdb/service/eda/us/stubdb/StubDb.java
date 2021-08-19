@@ -1,4 +1,4 @@
-package org.veupathdb.service.eda.ss.stubdb;
+package org.veupathdb.service.eda.us.stubdb;
 
 import org.gusdb.fgputil.db.SqlScriptRunner;
 import org.hsqldb.jdbc.JDBCDataSource;
@@ -9,8 +9,8 @@ import java.sql.SQLException;
 
 public class StubDb {
 
-  private static final String DB_SCHEMA_SCRIPT = "org/veupathdb/service/eda/ss/stubdb/createDbSchema.sql";
-  private static final String DB_DATA_SCRIPT = "org/veupathdb/service/eda/ss/stubdb/insertDbData.sql";
+  private static final String DB_SCHEMA_SCRIPT = "org/veupathdb/service/eda/us/stubdb/createDbSchema.sql";
+  private static final String DB_DATA_SCRIPT = "org/veupathdb/service/eda/us/stubdb/insertDbData.sql";
 
   private static final String STUB_DB_NAME = "stubDb";
 
@@ -31,12 +31,14 @@ public class StubDb {
       ds.setDatabase("jdbc:hsqldb:mem:" + STUB_DB_NAME);
       ds.setUser("stubby");
       ds.setPassword("");
-      SqlScriptRunner.runSqlScript(ds, DB_SCHEMA_SCRIPT);
-      SqlScriptRunner.runSqlScript(ds, DB_DATA_SCRIPT);
+      if (1 == 0) {
+        SqlScriptRunner.runSqlScript(ds, DB_SCHEMA_SCRIPT);
+        SqlScriptRunner.runSqlScript(ds, DB_DATA_SCRIPT);
+      }
       return ds;
     }
     catch (SQLException | IOException e) {
-      throw new RuntimeException("Unable to load stud database", e);
+      throw new RuntimeException("Unable to load stub database", e);
     }
   }
 }
