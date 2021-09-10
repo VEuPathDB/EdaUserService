@@ -2,6 +2,8 @@ package org.veupathdb.service.eda.us;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.fgputil.db.platform.DBPlatform;
+import org.gusdb.fgputil.db.platform.Oracle;
 import org.veupathdb.lib.container.jaxrs.config.Options;
 import org.veupathdb.lib.container.jaxrs.server.ContainerResources;
 import org.veupathdb.lib.container.jaxrs.utils.db.DbManager;
@@ -64,6 +66,10 @@ public class Resources extends ContainerResources {
 
   public static String getUserDbSchema() {
     return USE_IN_MEMORY_TEST_DATABASE ? "" : "edauser.";
+  }
+
+  public static DBPlatform getUserPlatform() {
+    return new Oracle();
   }
 
   /**

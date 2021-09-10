@@ -1,10 +1,11 @@
 -- Use oracle syntax throughout execution
 SET DATABASE SQL SYNTAX ORA TRUE;
 
--- Contains all users who own analysis instances in this DB
+-- Contains all users who own analysis instances or preferences in this DB
 CREATE TABLE users (
   user_id integer not null,
   is_guest integer not null,
+  preferences clob,
   PRIMARY KEY (user_id)
 );
 
@@ -27,11 +28,3 @@ CREATE TABLE analysis (
 ALTER TABLE analysis ADD FOREIGN KEY (user_id) REFERENCES users (user_id);
 ALTER TABLE analysis ADD UNIQUE (user_id, display_name);
 CREATE INDEX analysis_user_id_idx ON analysis (user_id);
-
--- Contains user preferences
-CREATE TABLE preferences (
-  user_id integer not null,
-  preferences clob,
-  PRIMARY KEY (user_id)
-);
-ALTER TABLE preferences ADD FOREIGN KEY (user_id) REFERENCES users (user_id);
