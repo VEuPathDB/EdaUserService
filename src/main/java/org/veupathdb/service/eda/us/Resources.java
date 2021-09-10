@@ -28,7 +28,7 @@ public class Resources extends ContainerResources {
       Boolean.valueOf(getOptionalVar("DEVELOPMENT_MODE", "true"));
 
   private static final boolean USE_IN_MEMORY_TEST_DATABASE =
-      Boolean.valueOf(getOptionalVar("USE_IN_MEMORY_TEST_DATABASE", "true"));
+      Boolean.valueOf(getOptionalVar("USE_IN_MEMORY_TEST_DATABASE", "false"));
 
   private static final boolean SKIP_USER_VALIDATION =
       Boolean.valueOf(getOptionalVar("SKIP_USER_VALIDATION", "false"));
@@ -55,7 +55,7 @@ public class Resources extends ContainerResources {
 
     LOG.info(USE_IN_MEMORY_TEST_DATABASE ? "Using in-memory DB for data storage" :
         "Using user DB for data storage with connection URL: " +
-        DbManager.getInstance().getApplicationDatabase().getConfig().getConnectionUrl());
+        DbManager.getInstance().getUserDatabase().getConfig().getConnectionUrl());
   }
 
   public static DataSource getUserDataSource() {

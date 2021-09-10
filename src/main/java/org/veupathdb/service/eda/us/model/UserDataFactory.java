@@ -1,7 +1,8 @@
 package org.veupathdb.service.eda.us.model;
 
 import java.sql.Types;
-import org.gusdb.fgputil.db.platform.DBPlatform;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.us.Resources;
@@ -9,12 +10,14 @@ import org.veupathdb.service.eda.us.Utils;
 
 public class UserDataFactory {
 
+  private static final Logger LOG = LogManager.getLogger(UserDataFactory.class);
+
   private static final String SCHEMA_MACRO = "SCHEMA";
 
   private static final String INSERT_USER_SQL =
-      "insert into " + SCHEMA_MACRO + "users" +
-      " select ? as user_id, ? as is_guest, '{}' as preferences from dual" +
-      " where not exists (select user_id from " + SCHEMA_MACRO + "users);";
+      "insert into " + SCHEMA_MACRO + "users " +
+      " select %d as user_id, %d as is_guest, '{}' as preferences from dual" +
+      " where not exists (select user_id from " + SCHEMA_MACRO + "users where user_id = %d)";
 
   private static final String READ_PREFS_SQL =
       "select preferences" +
@@ -31,15 +34,14 @@ public class UserDataFactory {
   }
 
   private static void addUserIfAbsent(User user) {
-    DBPlatform platform = Resources.getUserPlatform();
-    new SQLRunner(
-        Resources.getUserDataSource(),
+    String sql = String.format(
         addSchema(INSERT_USER_SQL),
-        "insert-user"
-    ).executeStatement(
-        new Object[]{ user.getUserID(), platform.convertBoolean(user.isGuest()) },
-        new Integer[]{ Types.BIGINT, platform.getBooleanType() }
-    );
+        user.getUserID(),
+        Resources.getUserPlatform().convertBoolean(user.isGuest()),
+        user.getUserID());
+    LOG.info("Trying to insert user with SQL: " + sql);
+    int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
+    LOG.info(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
   }
 
   public static String readPreferences(User user) {

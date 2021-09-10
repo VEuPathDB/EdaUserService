@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.veupathdb.service.eda.us.Resources;
+import org.veupathdb.service.eda.us.stubdb.StubDb;
 
 public class DbUpdateTest {
   
@@ -12,7 +12,7 @@ public class DbUpdateTest {
   
   @BeforeAll
   public static void setUp() {
-    datasource = Resources.getUserDataSource();
+    datasource = StubDb.getDataSource();
   }
   
   @Test

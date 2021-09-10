@@ -9,13 +9,15 @@ CREATE TABLE users (
   PRIMARY KEY (user_id)
 );
 
+--GRANT SELECT, INSERT, UPDATE, DELETE ON users TO COMM_WDK_W;
+
 -- Contains analysis instance data
 CREATE TABLE analysis (
   analysis_id varchar(50) not null,
   user_id integer not null,
   study_id varchar(50) not null,
   display_name varchar(50) not null,
-  description varchar(1000),
+  description varchar(4000),
   creation_time timestamp not null,
   modification_time timestamp not null,
   is_public integer not null,
@@ -28,3 +30,5 @@ CREATE TABLE analysis (
 ALTER TABLE analysis ADD FOREIGN KEY (user_id) REFERENCES users (user_id);
 ALTER TABLE analysis ADD UNIQUE (user_id, display_name);
 CREATE INDEX analysis_user_id_idx ON analysis (user_id);
+
+--GRANT SELECT, INSERT, UPDATE, DELETE ON analysis TO COMM_WDK_W;
