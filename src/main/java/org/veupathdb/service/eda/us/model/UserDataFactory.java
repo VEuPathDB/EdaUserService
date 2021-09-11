@@ -34,14 +34,15 @@ public class UserDataFactory {
   }
 
   private static void addUserIfAbsent(User user) {
+    // need to use format vs prepared statement for first two macros since they are in a select
     String sql = String.format(
         addSchema(INSERT_USER_SQL),
         user.getUserID(),
         Resources.getUserPlatform().convertBoolean(user.isGuest()),
         user.getUserID());
-    LOG.info("Trying to insert user with SQL: " + sql);
+    LOG.debug("Trying to insert user with SQL: " + sql);
     int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
-    LOG.info(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
+    LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
   }
 
   public static String readPreferences(User user) {
