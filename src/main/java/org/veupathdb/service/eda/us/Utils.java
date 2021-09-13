@@ -1,7 +1,6 @@
 package org.veupathdb.service.eda.us;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
