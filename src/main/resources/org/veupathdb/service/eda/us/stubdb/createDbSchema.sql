@@ -21,7 +21,7 @@ CREATE TABLE analysis (
   creation_time timestamp not null,
   modification_time timestamp not null,
   is_public integer not null,
-  num_subsets integer not null,
+  num_filters integer not null,
   num_computations integer not null,
   num_visualizations integer not null,
   analysis_descriptor clob,

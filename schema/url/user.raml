@@ -17,6 +17,11 @@ types:
     type: AnalysisBase
     properties:
       analysisId: string
+      creationTime: string
+      modificationTime: string
+      numFilters: integer
+      numComputations: integer
+      numVisualizations: integer
 
   AnalysisListPostRequest:
     additionalProperties: false
@@ -34,11 +39,10 @@ types:
     properties:
       analysisIdsToDelete: string[]
 
-  SingleAnalysisGetResponse:
+  AnalysisDetail:
     additionalProperties: false
-    type: AnalysisBase
+    type: AnalysisSummary
     properties:
-      analysisId: string
       descriptor: AnalysisDescriptor
 
   SingleAnalyisPatchRequest:
@@ -46,11 +50,8 @@ types:
     properties:
       displayName?: string
       description?: string
-      studyId?: string
-      studyVersion?: string
-      apiVersion?: string
-      isPublic?: boolean
       descriptor?: AnalysisDescriptor
+      isPublic?: boolean
 
   AnalysisDescriptor:
     additionalProperties: false
