@@ -1,17 +1,23 @@
 package org.veupathdb.service.eda.us;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Request;
 import org.gusdb.fgputil.FormatUtil;
+import org.gusdb.fgputil.json.JsonUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.providers.UserProvider;
+import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
@@ -35,12 +41,21 @@ public class Utils {
     throw exception;
   }
 
-  public static String getCurrentDateTime() {
+  public static String getCurrentDateTimeString() {
     return FormatUtil.formatDateTime(new Date());
   }
 
-  public static String getDateString(Timestamp timestamp) {
+  public static String formatTimestamp(Timestamp timestamp) {
     return FormatUtil.formatDateTime(new Date(timestamp.getTime()));
+  }
+
+  public static Date parseDate(String dateString) {
+    try {
+      return FormatUtil.STANDARD_DATE_TIME_TEXT_FORMAT.get().parse(dateString);
+    }
+    catch (ParseException e) {
+      throw new BadRequestException();
+    }
   }
 
   public static void verifyOwnership(long userId, String... ids) {
@@ -56,6 +71,24 @@ public class Utils {
   public static void verifyOwnership(long userId, AnalysisDetailWithUser analysis) {
     if (userId != analysis.getUserId()) {
       throw new NotFoundException();
+    }
+  }
+
+  public static AnalysisDescriptor parseDescriptor(String descriptorStr) {
+    try {
+      return JsonUtil.Jackson.readValue(descriptorStr, AnalysisDescriptor.class);
+    }
+    catch (JsonProcessingException e) {
+      throw new RuntimeException("Could not map descriptor string to an AnalysisDescriptor object", e);
+    }
+  }
+
+  public static String formatDescriptor(AnalysisDescriptor descriptor) {
+    try {
+      return JsonUtil.Jackson.writerFor(AnalysisDescriptor.class).writeValueAsString(descriptor);
+    }
+    catch (JsonProcessingException e) {
+      throw new RuntimeException("Could not serialize analysis descriptor", e);
     }
   }
 }

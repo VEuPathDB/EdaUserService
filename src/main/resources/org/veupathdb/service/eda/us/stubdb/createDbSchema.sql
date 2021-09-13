@@ -16,6 +16,8 @@ CREATE TABLE analysis (
   analysis_id varchar(50) not null,
   user_id integer not null,
   study_id varchar(50) not null,
+  study_version varchar(50),
+  api_version varchar(50),
   display_name varchar(50) not null,
   description varchar(4000),
   creation_time timestamp not null,

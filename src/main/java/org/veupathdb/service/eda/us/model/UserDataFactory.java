@@ -1,49 +1,41 @@
 package org.veupathdb.service.eda.us.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.ws.rs.NotFoundException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
-import org.gusdb.fgputil.json.JsonUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
-import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
 import org.veupathdb.service.eda.generated.model.AnalysisSummary;
 import org.veupathdb.service.eda.generated.model.AnalysisSummaryImpl;
 import org.veupathdb.service.eda.us.Resources;
 import org.veupathdb.service.eda.us.Utils;
 
+/**
+ * Performs all database operations for the user service
+ */
 public class UserDataFactory {
 
   private static final Logger LOG = LogManager.getLogger(UserDataFactory.class);
 
-  private static final String SCHEMA_MACRO = "SCHEMA";
+  private static final String SCHEMA_MACRO = "$SCHEMA$";
 
-  private static final String INSERT_USER_SQL =
-      "insert into " + SCHEMA_MACRO + "users " +
-      " select %d as user_id, %d as is_guest, '{}' as preferences from dual" +
-      " where not exists (select user_id from " + SCHEMA_MACRO + "users where user_id = %d)";
-
-  private static final String READ_PREFS_SQL =
-      "select preferences" +
-      " from " + SCHEMA_MACRO + "users" +
-      " where user_id = ?";
-
-  private static final String WRITE_PREFS_SQL =
-      "update " + SCHEMA_MACRO + "users" +
-      " set preferences = ?" +
-      " where user_id = ?";
+  private static final String TABLE_USERS = "users";
+  private static final String TABLE_ANALYSIS = "analysis";
 
   // constants for analysis table columns
   private static final String COL_ANALYSIS_ID = "analysis_id"; // varchar(50) not null,
   private static final String COL_USER_ID = "user_id"; // integer not null,
   private static final String COL_STUDY_ID = "study_id"; // varchar(50) not null,
+  private static final String COL_STUDY_VERSION = "study_version"; // varchar(50),
+  private static final String COL_API_VERSION = "api_version"; // varchar(50),
   private static final String COL_DISPLAY_NAME = "display_name"; // varchar(50) not null,
   private static final String COL_DESCRIPTION = "description"; // varchar(4000),
   private static final String COL_CREATION_TIME = "creation_time"; // timestamp not null,
@@ -58,6 +50,8 @@ public class UserDataFactory {
       COL_ANALYSIS_ID, // varchar(50) not null,
       COL_USER_ID, // integer not null,
       COL_STUDY_ID, // varchar(50) not null,
+      COL_STUDY_VERSION, // varchar(50),
+      COL_API_VERSION, // varchar(50),
       COL_DISPLAY_NAME, // varchar(50) not null,
       COL_DESCRIPTION, // varchar(4000),
       COL_CREATION_TIME, // timestamp not null,
@@ -68,24 +62,23 @@ public class UserDataFactory {
       COL_NUM_VISUALIZATIONS // integer not null,
   };
 
-  private static final String GET_ANALYSES_BY_USER_SQL =
-      "select " + String.join(", ", SUMMARY_COLS) +
-      " from " + SCHEMA_MACRO + "analysis" +
-      " where " + COL_USER_ID + " = ?";
-
   private static final String[] DETAIL_COLS = ArrayUtil.concatenate(
       SUMMARY_COLS,
       new String[]{ COL_DESCRIPTOR }
   );
 
-  private static final String GET_ANALYSIS_BY_ID_SQL =
-      "select " + String.join(", ", DETAIL_COLS) +
-      " from " + SCHEMA_MACRO + "analysis" +
-      " where " + COL_ANALYSIS_ID + " = ?";
-
   private static String addSchema(String sqlConstant) {
     return sqlConstant.replace(SCHEMA_MACRO, Resources.getUserDbSchema());
   }
+
+  /***************************************************************************************
+   *** Insert user
+   **************************************************************************************/
+
+  private static final String INSERT_USER_SQL =
+      "insert into " + SCHEMA_MACRO + TABLE_USERS +
+      " select %d as user_id, %d as is_guest, '{}' as preferences from dual" +
+      " where not exists (select user_id from " + SCHEMA_MACRO + TABLE_USERS + " where user_id = %d)";
 
   public static void addUserIfAbsent(User user) {
     // need to use format vs prepared statement for first two macros since they are in a select
@@ -98,6 +91,15 @@ public class UserDataFactory {
     int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
     LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
   }
+
+  /***************************************************************************************
+   *** Read preferences
+   **************************************************************************************/
+
+  private static final String READ_PREFS_SQL =
+      "select preferences" +
+      " from " + SCHEMA_MACRO + TABLE_USERS +
+      " where user_id = ?";
 
   public static String readPreferences(long userId) {
     return new SQLRunner(
@@ -113,6 +115,15 @@ public class UserDataFactory {
     );
   }
 
+  /***************************************************************************************
+   *** Write preferences
+   **************************************************************************************/
+
+  private static final String WRITE_PREFS_SQL =
+      "update " + SCHEMA_MACRO + TABLE_USERS +
+      " set preferences = ?" +
+      " where user_id = ?";
+
   public static void writePreferences(long userId, String prefsObject) {
     new SQLRunner(
         Resources.getUserDataSource(),
@@ -123,6 +134,16 @@ public class UserDataFactory {
         new Integer[]{ Types.CLOB, Types.BIGINT }
     );
   }
+
+  /***************************************************************************************
+   *** Get user's analyses
+   **************************************************************************************/
+
+  private static final String GET_ANALYSES_BY_USER_SQL =
+      "select " + String.join(", ", SUMMARY_COLS) +
+      " from " + SCHEMA_MACRO + TABLE_ANALYSIS +
+      " where " + COL_USER_ID + " = ?" +
+      " order by " + COL_MODIFICATION_TIME + " desc";
 
   public static List<AnalysisSummary> getAnalysisSummaries(long userId) {
     return new SQLRunner(
@@ -143,6 +164,15 @@ public class UserDataFactory {
         }
     );
   }
+
+  /***************************************************************************************
+   *** Get single analysis
+   **************************************************************************************/
+
+  private static final String GET_ANALYSIS_BY_ID_SQL =
+      "select " + String.join(", ", DETAIL_COLS) +
+      " from " + SCHEMA_MACRO + TABLE_ANALYSIS +
+      " where " + COL_ANALYSIS_ID + " = ?";
 
   public static AnalysisDetailWithUser getAnalysisById(String analysisId) {
     return new SQLRunner(
@@ -165,13 +195,87 @@ public class UserDataFactory {
     );
   }
 
+  /***************************************************************************************
+   *** Insert analysis
+   **************************************************************************************/
+
+  private static final String INSERT_ANALYSIS_SQL =
+      "insert into " + SCHEMA_MACRO + TABLE_ANALYSIS + " ( " +
+        String.join(", ", DETAIL_COLS) +
+      " ) values ( " +
+        Arrays.stream(DETAIL_COLS).map(c -> "?").collect(Collectors.joining(", ")) +
+      " ) ";
+
+  public static void insertAnalysis(AnalysisDetailWithUser analysis) {
+    new SQLRunner(
+        Resources.getUserDataSource(),
+        addSchema(INSERT_ANALYSIS_SQL),
+        "insert-analysis"
+    ).executeStatement(
+        new Object[]{
+            analysis.getAnalysisId(),
+            analysis.getUserId(),
+            analysis.getStudyId(),
+            analysis.getStudyVersion(),
+            analysis.getApiVersion(),
+            analysis.getDisplayName(),
+            analysis.getDescription(),
+            Utils.parseDate(analysis.getCreationTime()),
+            Utils.parseDate(analysis.getModificationTime()),
+            Resources.getUserPlatform().convertBoolean(analysis.getIsPublic()),
+            analysis.getNumFilters(),
+            analysis.getNumComputations(),
+            analysis.getNumVisualizations(),
+            Utils.formatDescriptor(analysis.getDescriptor())
+        },
+        new Integer[]{
+            Types.VARCHAR,
+            Types.BIGINT,
+            Types.VARCHAR,
+            Types.VARCHAR,
+            Types.VARCHAR,
+            Types.VARCHAR,
+            Types.VARCHAR,
+            Types.TIMESTAMP,
+            Types.TIMESTAMP,
+             Resources.getUserPlatform().getBooleanType(),
+            Types.INTEGER,
+            Types.INTEGER,
+            Types.INTEGER,
+            Types.CLOB
+        }
+    );
+  }
+
+  /***************************************************************************************
+   *** Update analysis
+   **************************************************************************************/
+
+  public static void updateAnalysis(AnalysisDetailWithUser analysis) {
+    // TODO write me
+  }
+
+  /***************************************************************************************
+   *** Delete a set of analyses
+   **************************************************************************************/
+
+  public static void deleteAnalyses(String... idsToDelete) {
+    // TODO write me
+  }
+
+  /***************************************************************************************
+   *** Analysis object population methods
+   **************************************************************************************/
+
   private static void populateSummaryFields(AnalysisSummary analysis, ResultSet rs) throws SQLException {
     analysis.setAnalysisId(rs.getString(COL_ANALYSIS_ID)); // varchar(50) not null,
     analysis.setStudyId(rs.getString(COL_STUDY_ID)); // varchar(50) not null,
+    analysis.setStudyVersion(rs.getString(COL_STUDY_VERSION)); // varchar(50),
+    analysis.setApiVersion(rs.getString(COL_API_VERSION)); // varchar(50),
     analysis.setDisplayName(rs.getString(COL_DISPLAY_NAME)); // varchar(50) not null,
     analysis.setDescription(rs.getString(COL_DESCRIPTION)); // varchar(4000),
-    analysis.setCreationTime(Utils.getDateString(rs.getTimestamp(COL_CREATION_TIME))); // timestamp not null,
-    analysis.setModificationTime(Utils.getDateString(rs.getTimestamp(COL_MODIFICATION_TIME))); // timestamp not null,
+    analysis.setCreationTime(Utils.formatTimestamp(rs.getTimestamp(COL_CREATION_TIME))); // timestamp not null,
+    analysis.setModificationTime(Utils.formatTimestamp(rs.getTimestamp(COL_MODIFICATION_TIME))); // timestamp not null,
     analysis.setIsPublic(Resources.getUserPlatform().getBooleanValue(rs, COL_IS_PUBLIC, false)); // integer not null,
     analysis.setNumFilters(rs.getInt(COL_NUM_FILTERS)); // integer not null,
     analysis.setNumComputations(rs.getInt(COL_NUM_COMPUTATIONS)); // integer not null,
@@ -181,23 +285,6 @@ public class UserDataFactory {
   static void populateDetailFields(AnalysisDetailWithUser analysis, ResultSet rs) throws SQLException {
     analysis.setUserId(rs.getLong(COL_USER_ID));
     UserDataFactory.populateSummaryFields(analysis, rs);
-    try {
-      AnalysisDescriptor descriptor = JsonUtil.Jackson.readValue(
-          Resources.getUserPlatform().getClobData(rs, COL_DESCRIPTOR), AnalysisDescriptor.class);
-      analysis.setDescriptor(descriptor);
-    }
-    catch (JsonProcessingException e) {
-      throw new RuntimeException("Descriptor JSON for analysis " +
-          analysis.getAnalysisId() + " could not be mapped to an AnalysisDescriptor object.", e);
-    }
-  }
-
-  public static void insertAnalysis(AnalysisDetailWithUser analysis) {
-  }
-
-  public static void updateAnalysis(AnalysisDetailWithUser analysis) {
-  }
-
-  public static void deleteAnalyses(String... idsToDelete) {
+    analysis.setDescriptor(Utils.parseDescriptor(Resources.getUserPlatform().getClobData(rs, COL_DESCRIPTOR)));
   }
 }

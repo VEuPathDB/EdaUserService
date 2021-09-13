@@ -12,6 +12,10 @@ import org.veupathdb.service.eda.generated.model.AnalysisListPostResponse;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostResponseImpl;
 import org.veupathdb.service.eda.us.Utils;
 
+/**
+ * Non-API analysis data container; used to pass information about a single
+ * analysis (detail) back and forth between the service and data factory
+ */
 public class AnalysisDetailWithUser extends AnalysisDetailImpl {
 
   private long _userId;
@@ -35,7 +39,7 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
   }
 
   private void setInitializationFields(long ownerId) {
-    String now = Utils.getCurrentDateTime();
+    String now = Utils.getCurrentDateTimeString();
     setUserId(ownerId);
     setCreationTime(now);
     setModificationTime(now);

@@ -106,7 +106,7 @@ public class UserService implements UsersUserId {
       changeMade = true; analysis.setDescriptor(entity.getDescriptor());
     }
     if (changeMade) {
-      analysis.setModificationTime(Utils.getCurrentDateTime());
+      analysis.setModificationTime(Utils.getCurrentDateTimeString());
     }
   }
 
