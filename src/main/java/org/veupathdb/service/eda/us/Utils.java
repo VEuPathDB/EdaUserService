@@ -3,7 +3,6 @@ package org.veupathdb.service.eda.us;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.sql.Timestamp;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;

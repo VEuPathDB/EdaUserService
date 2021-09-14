@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,6 +67,23 @@ public class UserDataFactory {
       SUMMARY_COLS,
       new String[]{ COL_DESCRIPTOR }
   );
+
+  private static final Integer[] DETAIL_COL_TYPES = new Integer[] {
+      Types.VARCHAR, // analysis_id
+      Types.BIGINT, // user_id
+      Types.VARCHAR, // study_id
+      Types.VARCHAR, // study_version
+      Types.VARCHAR, // api_version
+      Types.VARCHAR, // display_name
+      Types.VARCHAR, // description
+      Types.TIMESTAMP, // creation_time
+      Types.TIMESTAMP, // modification_time
+      Resources.getUserPlatform().getBooleanType(), // is_public
+      Types.INTEGER, // num_filters
+      Types.INTEGER, // num_computations
+      Types.INTEGER, // num_visualizations
+      Types.CLOB // descriptor
+  };
 
   private static String addSchema(String sqlConstant) {
     return sqlConstant.replace(SCHEMA_MACRO, Resources.getUserDbSchema());
@@ -212,38 +230,8 @@ public class UserDataFactory {
         addSchema(INSERT_ANALYSIS_SQL),
         "insert-analysis"
     ).executeStatement(
-        new Object[]{
-            analysis.getAnalysisId(),
-            analysis.getUserId(),
-            analysis.getStudyId(),
-            analysis.getStudyVersion(),
-            analysis.getApiVersion(),
-            analysis.getDisplayName(),
-            analysis.getDescription(),
-            Utils.parseDate(analysis.getCreationTime()),
-            Utils.parseDate(analysis.getModificationTime()),
-            Resources.getUserPlatform().convertBoolean(analysis.getIsPublic()),
-            analysis.getNumFilters(),
-            analysis.getNumComputations(),
-            analysis.getNumVisualizations(),
-            Utils.formatDescriptor(analysis.getDescriptor())
-        },
-        new Integer[]{
-            Types.VARCHAR,
-            Types.BIGINT,
-            Types.VARCHAR,
-            Types.VARCHAR,
-            Types.VARCHAR,
-            Types.VARCHAR,
-            Types.VARCHAR,
-            Types.TIMESTAMP,
-            Types.TIMESTAMP,
-             Resources.getUserPlatform().getBooleanType(),
-            Types.INTEGER,
-            Types.INTEGER,
-            Types.INTEGER,
-            Types.CLOB
-        }
+        getAnalysisInsertValues(analysis),
+        DETAIL_COL_TYPES
     );
   }
 
@@ -251,16 +239,56 @@ public class UserDataFactory {
    *** Update analysis
    **************************************************************************************/
 
-  public static void updateAnalysis(AnalysisDetailWithUser analysis) {
-    // TODO write me
+  private static final String UPDATE_ANALYSIS_SQL =
+      "update " + SCHEMA_MACRO + TABLE_ANALYSIS + " set " +
+      Arrays.stream(DETAIL_COLS).map(c -> c + " = ?").collect(Collectors.joining(", ")) +
+      " where " + COL_ANALYSIS_ID + " = ?";
+
+  public static int updateAnalysis(AnalysisDetailWithUser analysis) {
+    return new SQLRunner(
+        Resources.getUserDataSource(),
+        addSchema(UPDATE_ANALYSIS_SQL),
+        "update-analysis"
+    ).executeUpdate(
+        ArrayUtil.concatenate(
+            getAnalysisInsertValues(analysis),
+            new Object[] { analysis.getAnalysisId() } // extra ? for analysis_id in where statement
+        ),
+        ArrayUtil.concatenate(
+            DETAIL_COL_TYPES,
+            new Integer[] { Types.VARCHAR } // extra ? for analysis_id in where statement
+        )
+    );
   }
 
   /***************************************************************************************
    *** Delete a set of analyses
    **************************************************************************************/
 
+  private static final String IDS_MACRO_LIST_MACRO = "$MACRO_LIST$";
+  private static final String DELETE_ANALYSES_SQL =
+      "delete from " + SCHEMA_MACRO + TABLE_ANALYSIS +
+      " where " + COL_ANALYSIS_ID + " IN  ( " + IDS_MACRO_LIST_MACRO + " )";
+
   public static void deleteAnalyses(String... idsToDelete) {
-    // TODO write me
+
+    // check for valid number of IDs
+    if (idsToDelete.length == 0) return;
+    if (idsToDelete.length > 200) throw new BadRequestException("Too many IDS (max = 200)");
+
+    // construct prepared statement SQL with the right number of macros for all the IDs
+    String[] stringArr = new String[idsToDelete.length];
+    Arrays.fill(stringArr, "?");
+    String sql = DELETE_ANALYSES_SQL.replace(IDS_MACRO_LIST_MACRO,
+        Arrays.stream(stringArr).collect(Collectors.joining(", ")));
+
+    new SQLRunner(
+        Resources.getUserDataSource(),
+        addSchema(sql),
+        "delete-analyses"
+    ).executeStatement(
+        idsToDelete
+    );
   }
 
   /***************************************************************************************
@@ -286,5 +314,28 @@ public class UserDataFactory {
     analysis.setUserId(rs.getLong(COL_USER_ID));
     UserDataFactory.populateSummaryFields(analysis, rs);
     analysis.setDescriptor(Utils.parseDescriptor(Resources.getUserPlatform().getClobData(rs, COL_DESCRIPTOR)));
+  }
+
+  /***************************************************************************************
+   *** Types and vals for analysis insert/update prepared statement vars
+   **************************************************************************************/
+
+  private static Object[] getAnalysisInsertValues(AnalysisDetailWithUser analysis) {
+    return new Object[]{
+        analysis.getAnalysisId(),
+        analysis.getUserId(),
+        analysis.getStudyId(),
+        analysis.getStudyVersion(),
+        analysis.getApiVersion(),
+        analysis.getDisplayName(),
+        analysis.getDescription(),
+        Utils.parseDate(analysis.getCreationTime()),
+        Utils.parseDate(analysis.getModificationTime()),
+        Resources.getUserPlatform().convertBoolean(analysis.getIsPublic()),
+        analysis.getNumFilters(),
+        analysis.getNumComputations(),
+        analysis.getNumVisualizations(),
+        Utils.formatDescriptor(analysis.getDescriptor())
+    };
   }
 }
