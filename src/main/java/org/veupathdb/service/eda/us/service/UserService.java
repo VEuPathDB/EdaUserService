@@ -85,15 +85,18 @@ public class UserService implements UsersUserId {
     User user = Utils.getAuthorizedUser(_request, userId);
     AnalysisDetailWithUser analysis = UserDataFactory.getAnalysisById(analysisId);
     Utils.verifyOwnership(user.getUserID(), analysis);
-    editAnalysis(analysis, entity);
+    editAnalysis(user, analysis, entity);
     UserDataFactory.updateAnalysis(analysis);
     return PatchUsersAnalysesByUserIdAndAnalysisIdResponse.respond202();
   }
 
-  private static void editAnalysis(AnalysisDetail analysis, SingleAnalyisPatchRequest entity) {
+  private static void editAnalysis(User user, AnalysisDetail analysis, SingleAnalyisPatchRequest entity) {
     boolean changeMade = false;
     // FIXME: need to box boolean primitive in generated code; this is broken!
     if ((Boolean)entity.getIsPublic() != null) {
+      if (user.isGuest() && entity.getIsPublic()) {
+        throw new BadRequestException("Guest users cannot make their analyses public.");
+      }
       changeMade = true; analysis.setIsPublic(entity.getIsPublic());
     }
     if (entity.getDisplayName() != null) {
@@ -126,10 +129,11 @@ public class UserService implements UsersUserId {
     AnalysisDetailWithUser oldAnalysis = UserDataFactory.getAnalysisById(analysisId);
     Utils.verifyOwnership(userId, oldAnalysis);
 
-    // make a copy of the analysis, assign a new owner, and insert
+    // make a copy of the analysis, assign a new owner, check display name (must be unique) and insert
     User newOwner = Utils.getActiveUser(_request);
     UserDataFactory.addUserIfAbsent(newOwner);
     AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(newOwner.getUserID(), oldAnalysis);
+
     UserDataFactory.insertAnalysis(newAnalysis);
 
     return PostUsersAnalysesCopyByUserIdAndAnalysisIdResponse.respond200WithApplicationJson(newAnalysis.getIdObject());

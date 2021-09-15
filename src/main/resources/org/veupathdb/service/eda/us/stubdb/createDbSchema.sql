@@ -9,7 +9,7 @@ CREATE TABLE users (
   PRIMARY KEY (user_id)
 );
 
---GRANT SELECT, INSERT, UPDATE, DELETE ON users TO COMM_WDK_W;
+--GRANT SELECT, INSERT, UPDATE, DELETE ON edauser.users TO COMM_WDK_W;
 
 -- Contains analysis instance data
 CREATE TABLE analysis (
@@ -30,7 +30,6 @@ CREATE TABLE analysis (
   PRIMARY KEY (analysis_id)
 );
 ALTER TABLE analysis ADD FOREIGN KEY (user_id) REFERENCES users (user_id);
-ALTER TABLE analysis ADD UNIQUE (user_id, display_name);
 CREATE INDEX analysis_user_id_idx ON analysis (user_id);
 
---GRANT SELECT, INSERT, UPDATE, DELETE ON analysis TO COMM_WDK_W;
+--GRANT SELECT, INSERT, UPDATE, DELETE ON edauser.analysis TO COMM_WDK_W;

@@ -6,6 +6,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
@@ -42,7 +43,7 @@ public class UserDataFactory {
   private static final String COL_CREATION_TIME = "creation_time"; // timestamp not null,
   private static final String COL_MODIFICATION_TIME = "modification_time"; // timestamp not null,
   private static final String COL_IS_PUBLIC = "is_public"; // integer not null,
-  private static final String COL_NUM_FILTERS = "num_subsets"; // integer not null,
+  private static final String COL_NUM_FILTERS = "num_filters"; // integer not null,
   private static final String COL_NUM_COMPUTATIONS = "num_computations"; // integer not null,
   private static final String COL_NUM_VISUALIZATIONS = "num_visualizations"; // integer not null,
   private static final String COL_DESCRIPTOR = "analysis_descriptor"; // clob,
@@ -298,16 +299,20 @@ public class UserDataFactory {
   private static void populateSummaryFields(AnalysisSummary analysis, ResultSet rs) throws SQLException {
     analysis.setAnalysisId(rs.getString(COL_ANALYSIS_ID)); // varchar(50) not null,
     analysis.setStudyId(rs.getString(COL_STUDY_ID)); // varchar(50) not null,
-    analysis.setStudyVersion(rs.getString(COL_STUDY_VERSION)); // varchar(50),
-    analysis.setApiVersion(rs.getString(COL_API_VERSION)); // varchar(50),
+    analysis.setStudyVersion(getStringOrEmpty(rs, COL_STUDY_VERSION)); // varchar(50),
+    analysis.setApiVersion(getStringOrEmpty(rs, COL_API_VERSION)); // varchar(50),
     analysis.setDisplayName(rs.getString(COL_DISPLAY_NAME)); // varchar(50) not null,
-    analysis.setDescription(rs.getString(COL_DESCRIPTION)); // varchar(4000),
+    analysis.setDescription(getStringOrEmpty(rs, COL_DESCRIPTION)); // varchar(4000),
     analysis.setCreationTime(Utils.formatTimestamp(rs.getTimestamp(COL_CREATION_TIME))); // timestamp not null,
     analysis.setModificationTime(Utils.formatTimestamp(rs.getTimestamp(COL_MODIFICATION_TIME))); // timestamp not null,
     analysis.setIsPublic(Resources.getUserPlatform().getBooleanValue(rs, COL_IS_PUBLIC, false)); // integer not null,
     analysis.setNumFilters(rs.getInt(COL_NUM_FILTERS)); // integer not null,
     analysis.setNumComputations(rs.getInt(COL_NUM_COMPUTATIONS)); // integer not null,
     analysis.setNumVisualizations(rs.getInt(COL_NUM_VISUALIZATIONS)); // integer not null,
+  }
+
+  private static String getStringOrEmpty(ResultSet rs, String colName) throws SQLException {
+    return Optional.ofNullable(rs.getString(colName)).orElse("");
   }
 
   static void populateDetailFields(AnalysisDetailWithUser analysis, ResultSet rs) throws SQLException {

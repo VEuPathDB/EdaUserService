@@ -1,5 +1,7 @@
 package org.veupathdb.service.eda.us.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import org.gusdb.fgputil.EncryptionUtil;
@@ -62,6 +64,7 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
         (count, next) -> next.getVisualizations().size(), 0));
   }
 
+  @JsonIgnore
   public long getUserId() {
     return _userId;
   }
@@ -70,6 +73,7 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
     _userId = userId;
   }
 
+  @JsonIgnore
   public AnalysisListPostResponse getIdObject() {
     AnalysisListPostResponse idObj = new AnalysisListPostResponseImpl();
     idObj.setAnalysisId(getAnalysisId());
