@@ -23,6 +23,13 @@ types:
       numComputations: integer
       numVisualizations: integer
 
+  AnalysisSummaryWithUser:
+    additionalProperties: false
+    type: AnalysisSummary
+    properties:
+      userName: string
+      userOrganization: string
+
   AnalysisListPostRequest:
     additionalProperties: false
     type: AnalysisBase

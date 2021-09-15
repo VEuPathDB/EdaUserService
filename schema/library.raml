@@ -27,6 +27,12 @@ types:
       numFilters: integer
       numComputations: integer
       numVisualizations: integer
+  AnalysisSummaryWithUser:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      userName: string
+      userOrganization: string
   AnalysisListPostRequest:
     type: AnalysisBase
     additionalProperties: false

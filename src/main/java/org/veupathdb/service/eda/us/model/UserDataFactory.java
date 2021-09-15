@@ -293,6 +293,34 @@ public class UserDataFactory {
   }
 
   /***************************************************************************************
+   *** Get public analyses
+   **************************************************************************************/
+
+  private static final String GET_PUBLIC_ANALYSES_SQL =
+      "select " + String.join(", ", SUMMARY_COLS) +
+      " from " + SCHEMA_MACRO + TABLE_ANALYSIS +
+      " where " + COL_IS_PUBLIC + " = " + Resources.getUserPlatform().convertBoolean(true) +
+      " order by " + COL_MODIFICATION_TIME + " desc";
+
+  public static List<AnalysisSummaryWithUserAndId> getPublicAnalyses() {
+    return new SQLRunner(
+        Resources.getUserDataSource(),
+        addSchema(GET_PUBLIC_ANALYSES_SQL),
+        "public-analysis-summaries"
+    ).executeQuery(
+        rs -> {
+          List<AnalysisSummaryWithUserAndId> list = new ArrayList<>();
+          while (rs.next()) {
+            AnalysisSummaryWithUserAndId sum = new AnalysisSummaryWithUserAndId(rs.getLong(COL_USER_ID));
+            populateSummaryFields(sum, rs);
+            list.add(sum);
+          }
+          return list;
+        }
+    );
+  }
+
+  /***************************************************************************************
    *** Analysis object population methods
    **************************************************************************************/
 
