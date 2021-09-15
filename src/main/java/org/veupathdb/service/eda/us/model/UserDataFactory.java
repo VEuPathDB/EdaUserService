@@ -28,9 +28,8 @@ public class UserDataFactory {
   private static final Logger LOG = LogManager.getLogger(UserDataFactory.class);
 
   private static final String SCHEMA_MACRO = "$SCHEMA$";
-
-  private static final String TABLE_USERS = "users";
-  private static final String TABLE_ANALYSIS = "analysis";
+  private static final String TABLE_USERS = SCHEMA_MACRO + "users";
+  private static final String TABLE_ANALYSIS = SCHEMA_MACRO + "analysis";
 
   // constants for analysis table columns
   private static final String COL_ANALYSIS_ID = "analysis_id"; // varchar(50) not null,
@@ -95,9 +94,9 @@ public class UserDataFactory {
    **************************************************************************************/
 
   private static final String INSERT_USER_SQL =
-      "insert into " + SCHEMA_MACRO + TABLE_USERS +
+      "insert into " + TABLE_USERS +
       " select %d as user_id, %d as is_guest, '{}' as preferences from dual" +
-      " where not exists (select user_id from " + SCHEMA_MACRO + TABLE_USERS + " where user_id = %d)";
+      " where not exists (select user_id from " + TABLE_USERS + " where user_id = %d)";
 
   public static void addUserIfAbsent(User user) {
     // need to use format vs prepared statement for first two macros since they are in a select
@@ -117,7 +116,7 @@ public class UserDataFactory {
 
   private static final String READ_PREFS_SQL =
       "select preferences" +
-      " from " + SCHEMA_MACRO + TABLE_USERS +
+      " from " + TABLE_USERS +
       " where user_id = ?";
 
   public static String readPreferences(long userId) {
@@ -139,7 +138,7 @@ public class UserDataFactory {
    **************************************************************************************/
 
   private static final String WRITE_PREFS_SQL =
-      "update " + SCHEMA_MACRO + TABLE_USERS +
+      "update " + TABLE_USERS +
       " set preferences = ?" +
       " where user_id = ?";
 
@@ -160,7 +159,7 @@ public class UserDataFactory {
 
   private static final String GET_ANALYSES_BY_USER_SQL =
       "select " + String.join(", ", SUMMARY_COLS) +
-      " from " + SCHEMA_MACRO + TABLE_ANALYSIS +
+      " from " + TABLE_ANALYSIS +
       " where " + COL_USER_ID + " = ?" +
       " order by " + COL_MODIFICATION_TIME + " desc";
 
@@ -190,7 +189,7 @@ public class UserDataFactory {
 
   private static final String GET_ANALYSIS_BY_ID_SQL =
       "select " + String.join(", ", DETAIL_COLS) +
-      " from " + SCHEMA_MACRO + TABLE_ANALYSIS +
+      " from " + TABLE_ANALYSIS +
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public static AnalysisDetailWithUser getAnalysisById(String analysisId) {
@@ -219,7 +218,7 @@ public class UserDataFactory {
    **************************************************************************************/
 
   private static final String INSERT_ANALYSIS_SQL =
-      "insert into " + SCHEMA_MACRO + TABLE_ANALYSIS + " ( " +
+      "insert into " + TABLE_ANALYSIS + " ( " +
         String.join(", ", DETAIL_COLS) +
       " ) values ( " +
         Arrays.stream(DETAIL_COLS).map(c -> "?").collect(Collectors.joining(", ")) +
@@ -241,7 +240,7 @@ public class UserDataFactory {
    **************************************************************************************/
 
   private static final String UPDATE_ANALYSIS_SQL =
-      "update " + SCHEMA_MACRO + TABLE_ANALYSIS + " set " +
+      "update " + TABLE_ANALYSIS + " set " +
       Arrays.stream(DETAIL_COLS).map(c -> c + " = ?").collect(Collectors.joining(", ")) +
       " where " + COL_ANALYSIS_ID + " = ?";
 
@@ -268,7 +267,7 @@ public class UserDataFactory {
 
   private static final String IDS_MACRO_LIST_MACRO = "$MACRO_LIST$";
   private static final String DELETE_ANALYSES_SQL =
-      "delete from " + SCHEMA_MACRO + TABLE_ANALYSIS +
+      "delete from " + TABLE_ANALYSIS +
       " where " + COL_ANALYSIS_ID + " IN  ( " + IDS_MACRO_LIST_MACRO + " )";
 
   public static void deleteAnalyses(String... idsToDelete) {
@@ -298,7 +297,7 @@ public class UserDataFactory {
 
   private static final String GET_PUBLIC_ANALYSES_SQL =
       "select " + String.join(", ", SUMMARY_COLS) +
-      " from " + SCHEMA_MACRO + TABLE_ANALYSIS +
+      " from " + TABLE_ANALYSIS +
       " where " + COL_IS_PUBLIC + " = " + Resources.getUserPlatform().convertBoolean(true) +
       " order by " + COL_MODIFICATION_TIME + " desc";
 
@@ -317,6 +316,31 @@ public class UserDataFactory {
           }
           return list;
         }
+    );
+  }
+
+  /***************************************************************************************
+   *** Transfer guest analyses to logged in user
+   **************************************************************************************/
+
+  private static final String TRANSFER_GUEST_ANALYSES_SQL =
+      "update " + TABLE_ANALYSIS +
+      " set user_id = ?" +
+      " where analysis_id in (" +
+      "   select analysis_id" +
+      "   from " + TABLE_ANALYSIS + " a, " + TABLE_USERS + " u" +
+      "   where a.user_id = u.user_id" +
+      "   and u.is_guest = " + Resources.getUserPlatform().convertBoolean(true) +
+      "   and u.user_id = ?" +
+      " )";
+
+  public static void transferGuestAnalysesOwnership(long fromGuestUserId, long toRegisteredUserId) {
+    new SQLRunner(
+        Resources.getUserDataSource(),
+        addSchema(TRANSFER_GUEST_ANALYSES_SQL),
+        "transfer-analyses"
+    ).executeStatement(
+        new Object[]{ toRegisteredUserId, fromGuestUserId }
     );
   }
 

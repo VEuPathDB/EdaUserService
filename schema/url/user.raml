@@ -44,7 +44,8 @@ types:
   AnalysisListPatchRequest:
     additionalProperties: false
     properties:
-      analysisIdsToDelete: string[]
+      analysisIdsToDelete?: string[]
+      inheritOwnershipFrom?: integer
 
   AnalysisDetail:
     additionalProperties: false
@@ -52,7 +53,7 @@ types:
     properties:
       descriptor: AnalysisDescriptor
 
-  SingleAnalyisPatchRequest:
+  SingleAnalysisPatchRequest:
     additionalProperties: false
     properties:
       displayName?: string

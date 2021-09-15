@@ -12,7 +12,7 @@ import org.veupathdb.service.eda.generated.model.AnalysisDetail;
 import org.veupathdb.service.eda.generated.model.AnalysisListPatchRequest;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostRequest;
 import org.veupathdb.service.eda.generated.model.AnalysisSummary;
-import org.veupathdb.service.eda.generated.model.SingleAnalyisPatchRequest;
+import org.veupathdb.service.eda.generated.model.SingleAnalysisPatchRequest;
 import org.veupathdb.service.eda.generated.resources.UsersUserId;
 import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
@@ -65,23 +65,35 @@ public class UserService implements UsersUserId {
   @Override
   public PatchUsersAnalysesByUserIdResponse patchUsersAnalysesByUserId(String userId, AnalysisListPatchRequest entity) {
     User user = Utils.getAuthorizedUser(_request, userId);
-    List<String> idsToDelete = entity.getAnalysisIdsToDelete();
-    if (idsToDelete != null && !idsToDelete.isEmpty()) {
-      try {
-        String[] idArray = idsToDelete.toArray(new String[0]);
-        Utils.verifyOwnership(user.getUserID(), idArray);
-        UserDataFactory.deleteAnalyses(idArray);
-      }
-      catch (NotFoundException nfe) {
-        // validateOwnership throws not found if ID does not exist; convert to 400
-        throw new BadRequestException(nfe.getMessage());
-      }
-    }
+    performBulkDeletion(user, entity.getAnalysisIdsToDelete());
+    performInheritGuestAnalyses(user, entity.getInheritOwnershipFrom());
     return PatchUsersAnalysesByUserIdResponse.respond202();
   }
 
+  private void performBulkDeletion(User user, List<String> analysisIdsToDelete) {
+    if (analysisIdsToDelete == null || analysisIdsToDelete.isEmpty())
+      return;
+    try {
+      String[] idArray = analysisIdsToDelete.toArray(new String[0]);
+      Utils.verifyOwnership(user.getUserID(), idArray);
+      UserDataFactory.deleteAnalyses(idArray);
+    }
+    catch (NotFoundException nfe) {
+      // validateOwnership throws not found if ID does not exist; convert to 400
+      throw new BadRequestException(nfe.getMessage());
+    }
+  }
+
+  private void performInheritGuestAnalyses(User user, Integer guestUserId) {
+    if (guestUserId == null)
+      return;
+    if (user.isGuest())
+      throw new BadRequestException("Guest users cannot inherit analyses.");
+    UserDataFactory.transferGuestAnalysesOwnership(guestUserId.longValue(), user.getUserID());
+  }
+
   @Override
-  public PatchUsersAnalysesByUserIdAndAnalysisIdResponse patchUsersAnalysesByUserIdAndAnalysisId(String userId, String analysisId, SingleAnalyisPatchRequest entity) {
+  public PatchUsersAnalysesByUserIdAndAnalysisIdResponse patchUsersAnalysesByUserIdAndAnalysisId(String userId, String analysisId, SingleAnalysisPatchRequest entity) {
     User user = Utils.getAuthorizedUser(_request, userId);
     AnalysisDetailWithUser analysis = UserDataFactory.getAnalysisById(analysisId);
     Utils.verifyOwnership(user.getUserID(), analysis);
@@ -90,10 +102,9 @@ public class UserService implements UsersUserId {
     return PatchUsersAnalysesByUserIdAndAnalysisIdResponse.respond202();
   }
 
-  private static void editAnalysis(User user, AnalysisDetail analysis, SingleAnalyisPatchRequest entity) {
+  private static void editAnalysis(User user, AnalysisDetail analysis, SingleAnalysisPatchRequest entity) {
     boolean changeMade = false;
-    // FIXME: need to box boolean primitive in generated code; this is broken!
-    if ((Boolean)entity.getIsPublic() != null) {
+    if (entity.getIsPublic() != null) {
       if (user.isGuest() && entity.getIsPublic()) {
         throw new BadRequestException("Guest users cannot make their analyses public.");
       }
