@@ -11,7 +11,6 @@ import org.gusdb.fgputil.accountdb.AccountManager;
 import org.gusdb.fgputil.accountdb.UserProfile;
 import org.gusdb.fgputil.accountdb.UserPropertyName;
 import org.veupathdb.lib.container.jaxrs.utils.db.DbManager;
-import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUser;
 
 public class AccountDbData {
 
@@ -35,16 +34,16 @@ public class AccountDbData {
 
   private final Map<Long, Optional<AccountDataPair>> _accountDataCache = new HashMap<>();
 
-  public List<AnalysisSummaryWithUser> populateOwnerData(List<AnalysisSummaryWithUserAndId> analyses) {
+  public List<org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUser> populateOwnerData(List<AnalysisSummaryWithUser> analyses) {
     AccountManager acctDb = new AccountManager(DbManager.accountDatabase(), "useraccounts.", USER_PROPERTIES);
     return analyses.stream()
       .peek(analysis -> {
         Optional<AccountDataPair> accountData = _accountDataCache.get(analysis.getUserId());
         if (accountData == null) {
-          UserProfile profile = acctDb.getUserProfile(analysis.getUserId());
+          UserProfile profile = acctDb.getUserProfile(analysis.getUserId().longValue());
           accountData = profile == null || profile.isGuest() ? Optional.empty() :
               Optional.of(new AccountDataPair(profile.getProperties()));
-          _accountDataCache.put(analysis.getUserId(), accountData);
+          _accountDataCache.put(analysis.getUserId().longValue(), accountData);
         }
         // skip value population for guests and deleted(?) users
         accountData.ifPresent(data -> {

@@ -7,89 +7,6 @@
 ################################################################################
 
 types:
-  AnalysisBase:
-    type: object
-    additionalProperties: false
-    properties:
-      displayName: string
-      description: string
-      studyId: string
-      studyVersion: string
-      apiVersion: string
-      isPublic: boolean
-  AnalysisSummary:
-    type: AnalysisBase
-    additionalProperties: false
-    properties:
-      analysisId: string
-      creationTime: string
-      modificationTime: string
-      numFilters: integer
-      numComputations: integer
-      numVisualizations: integer
-  AnalysisSummaryWithUser:
-    type: AnalysisSummary
-    additionalProperties: false
-    properties:
-      userName: string
-      userOrganization: string
-  AnalysisListPostRequest:
-    type: AnalysisBase
-    additionalProperties: false
-    properties:
-      descriptor: AnalysisDescriptor
-  AnalysisListPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      analysisId: string
-  AnalysisListPatchRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      analysisIdsToDelete?: string[]
-      inheritOwnershipFrom?: integer
-  AnalysisDetail:
-    type: AnalysisSummary
-    additionalProperties: false
-    properties:
-      descriptor: AnalysisDescriptor
-  SingleAnalysisPatchRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      displayName?: string
-      description?: string
-      descriptor?: AnalysisDescriptor
-      isPublic?: boolean
-  AnalysisDescriptor:
-    type: object
-    additionalProperties: false
-    properties:
-      subset:
-        type: object
-        properties:
-          descriptor: object[]
-          uiSettings?: object
-      computations: Computation[]
-      starredVariables: VariableSpec[]
-      dataTableColumns: VariableSpec[]
-      derivedVariables: DerivedVariable[]
-  Computation:
-    type: object
-    additionalProperties: false
-    properties:
-      computationId: string
-      displayName: string
-      descriptor: object
-      visualizations: Visualization[]
-  Visualization:
-    type: object
-    additionalProperties: false
-    properties:
-      visualizationId: string
-      displayName: string
-      descriptor: object
   StudiesGetResponse:
     type: object
     additionalProperties: false
@@ -414,4 +331,88 @@ types:
     properties:
       histogram: HistogramBin[]
       statistics: HistogramStats
+  AnalysisBase:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName: string
+      description: string
+      studyId: string
+      studyVersion: string
+      apiVersion: string
+      isPublic: boolean
+  AnalysisSummary:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      analysisId: string
+      creationTime: string
+      modificationTime: string
+      numFilters: integer
+      numComputations: integer
+      numVisualizations: integer
+  AnalysisSummaryWithUser:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      userId: number
+      userName: string
+      userOrganization: string
+  AnalysisListPostRequest:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      descriptor: AnalysisDescriptor
+  AnalysisListPostResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisId: string
+  AnalysisListPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisIdsToDelete?: string[]
+      inheritOwnershipFrom?: integer
+  AnalysisDetail:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      descriptor: AnalysisDescriptor
+  SingleAnalysisPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName?: string
+      description?: string
+      descriptor?: AnalysisDescriptor
+      isPublic?: boolean
+  AnalysisDescriptor:
+    type: object
+    additionalProperties: false
+    properties:
+      subset:
+        type: object
+        properties:
+          descriptor: object[]
+          uiSettings?: object
+      computations: Computation[]
+      starredVariables: VariableSpec[]
+      dataTableColumns: VariableSpec[]
+      derivedVariables: DerivedVariable[]
+  Computation:
+    type: object
+    additionalProperties: false
+    properties:
+      computationId: string
+      displayName: string
+      descriptor: object
+      visualizations: Visualization[]
+  Visualization:
+    type: object
+    additionalProperties: false
+    properties:
+      visualizationId: string
+      displayName: string
+      descriptor: object
 

@@ -301,16 +301,16 @@ public class UserDataFactory {
       " where " + COL_IS_PUBLIC + " = " + Resources.getUserPlatform().convertBoolean(true) +
       " order by " + COL_MODIFICATION_TIME + " desc";
 
-  public static List<AnalysisSummaryWithUserAndId> getPublicAnalyses() {
+  public static List<AnalysisSummaryWithUser> getPublicAnalyses() {
     return new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(GET_PUBLIC_ANALYSES_SQL),
         "public-analysis-summaries"
     ).executeQuery(
         rs -> {
-          List<AnalysisSummaryWithUserAndId> list = new ArrayList<>();
+          List<AnalysisSummaryWithUser> list = new ArrayList<>();
           while (rs.next()) {
-            AnalysisSummaryWithUserAndId sum = new AnalysisSummaryWithUserAndId(rs.getLong(COL_USER_ID));
+            AnalysisSummaryWithUser sum = new AnalysisSummaryWithUser(rs.getLong(COL_USER_ID));
             populateSummaryFields(sum, rs);
             list.add(sum);
           }
