@@ -62,6 +62,17 @@ types:
       descriptor?: AnalysisDescriptor
       isPublic?: boolean
 
+  DataTableConfig:
+    additionalProperties: false
+    properties:
+      variables: VariableSpec[]
+      sorting: SortSpecEntry[]
+
+  DataTableConfigSet:
+    properties:
+      //: # not sure of entity name allowed regex
+        type: DataTableConfig
+
   AnalysisDescriptor:
     additionalProperties: false
     properties:
@@ -71,7 +82,7 @@ types:
           uiSettings?: object
       computations: Computation[]
       starredVariables: VariableSpec[]
-      dataTableColumns: VariableSpec[]
+      dataTableConfig: DataTableConfigSet
       derivedVariables: DerivedVariable[]
 
   Computation:

@@ -48,11 +48,20 @@ types:
       providerLabel: string
       displayName: string
       definition?: string
-      vocabulary?: string[]
       displayType: API_VariableDisplayType
       displayOrder?: number
+      isCategory: string
       type: API_VariableType
+  API_VariableWithValues:
+    type: API_Variable
+    properties:
       dataShape?: API_VariableDataShape
+      vocabulary?: string[]
+      distinctValuesCount: number
+      isTemporal: boolean
+      isFeatured: boolean
+      isMergeKey: boolean
+      isMultiValued: boolean
   API_VariableType:
     type: string
     enum:
@@ -79,16 +88,15 @@ types:
     type: API_Variable
     discriminatorValue: category
   API_StringVariable:
-    type: API_Variable
+    type: API_VariableWithValues
     discriminatorValue: string
+  API_LongitudeVariable:
+    type: API_VariableWithValues
+    discriminatorValue: longitude
     properties:
-      distinctValuesCount: number
-      isTemporal: boolean
-      isFeatured: boolean
-      isMergeKey: boolean
-      isMultiValued: boolean
+      precision: number
   API_NumberVariable:
-    type: API_Variable
+    type: API_VariableWithValues
     discriminatorValue: number
     properties:
       units: string
@@ -97,54 +105,30 @@ types:
       displayRangeMax?: number
       rangeMin?: number
       rangeMax?: number
-      binWidthOverride?: number
       binWidth?: number
-      distinctValuesCount: number
-      isTemporal: boolean
-      isFeatured: boolean
-      isMergeKey: boolean
-      isMultiValued: boolean
+      binWidthOverride?: number
   API_IntegerVariable:
-    type: API_Variable
+    type: API_VariableWithValues
     discriminatorValue: integer
     properties:
       units: string
-      displayRangeMin?: number
-      displayRangeMax?: number
-      rangeMin?: number
-      rangeMax?: number
-      binWidthOverride?: number
-      binWidth?: number
-      distinctValuesCount: number
-      isTemporal: boolean
-      isFeatured: boolean
-      isMergeKey: boolean
-      isMultiValued: boolean
+      displayRangeMin?: integer
+      displayRangeMax?: integer
+      rangeMin?: integer
+      rangeMax?: integer
+      binWidth?: integer
+      binWidthOverride?: integer
   API_DateVariable:
-    type: API_Variable
+    type: API_VariableWithValues
     discriminatorValue: date
     properties:
       displayRangeMin?: string
       displayRangeMax?: string
       rangeMin?: string
       rangeMax?: string
-      binWidthOverride?: number
       binWidth?: number
+      binWidthOverride?: number
       binUnits?: BinUnits
-      distinctValuesCount: number
-      isTemporal: boolean
-      isFeatured: boolean
-      isMergeKey: boolean
-      isMultiValued: boolean
-  API_LongitudeVariable:
-    type: API_Variable
-    discriminatorValue: longitude
-    properties:
-      distinctValuesCount: number
-      isTemporal: boolean
-      isFeatured: boolean
-      isMergeKey: boolean
-      isMultiValued: boolean
   API_Filter:
     type: object
     discriminator: type
@@ -268,6 +252,17 @@ types:
     additionalProperties: false
     properties:
       counts: string[][]
+  SortDirection:
+    type: string
+    enum:
+      - asc
+      - desc
+  SortSpecEntry:
+    type: object
+    additionalProperties: false
+    properties:
+      key: string
+      direction: SortDirection
   API_PagingConfig:
     type: object
     properties:
@@ -276,8 +271,8 @@ types:
   API_TabularReportConfig:
     type: object
     properties:
-      sortingColumns?: string[]
-      pagingConfig?: API_PagingConfig
+      sorting?: SortSpecEntry[]
+      paging?: API_PagingConfig
   BinUnits:
     type: string
     enum:
@@ -387,6 +382,16 @@ types:
       description?: string
       descriptor?: AnalysisDescriptor
       isPublic?: boolean
+  DataTableConfig:
+    type: object
+    additionalProperties: false
+    properties:
+      variables: VariableSpec[]
+      sorting: SortSpecEntry[]
+  DataTableConfigSet:
+    type: object
+    properties:
+      //: DataTableConfig
   AnalysisDescriptor:
     type: object
     additionalProperties: false
@@ -398,7 +403,7 @@ types:
           uiSettings?: object
       computations: Computation[]
       starredVariables: VariableSpec[]
-      dataTableColumns: VariableSpec[]
+      dataTableConfig: DataTableConfigSet
       derivedVariables: DerivedVariable[]
   Computation:
     type: object
