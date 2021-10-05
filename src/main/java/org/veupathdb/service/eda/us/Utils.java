@@ -90,4 +90,11 @@ public class Utils {
       throw new RuntimeException("Could not serialize analysis descriptor", e);
     }
   }
+
+  public static String checkNonEmpty(String key, String value) {
+    if (value == null || value.trim().isEmpty()) {
+      throw new BadRequestException(key + " cannot be empty.");
+    }
+    return value.trim();
+  }
 }

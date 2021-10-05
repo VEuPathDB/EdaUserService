@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.ws.rs.BadRequestException;
 import org.gusdb.fgputil.EncryptionUtil;
 import org.gusdb.fgputil.functional.Functions;
 import org.veupathdb.service.eda.generated.model.AnalysisBase;
@@ -49,11 +50,11 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
   }
 
   private void setBaseFields(AnalysisBase base) {
-    setDisplayName(base.getDisplayName());
+    setDisplayName(Utils.checkNonEmpty("displayName", base.getDisplayName()));
     setDescription(base.getDescription());
-    setStudyId(base.getStudyId());
-    setStudyVersion(base.getStudyVersion());
-    setApiVersion(base.getApiVersion());
+    setStudyId(Utils.checkNonEmpty("studyId", base.getStudyId()));
+    setStudyVersion(base.getStudyVersion()); // TODO: will eventually need to be non-empty
+    setApiVersion(base.getApiVersion());     // TODO: will eventually need to be non-empty
   }
 
   public void setDescriptor(AnalysisDescriptor descriptor) {

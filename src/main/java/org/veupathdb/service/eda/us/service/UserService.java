@@ -111,7 +111,7 @@ public class UserService implements UsersUserId {
       changeMade = true; analysis.setIsPublic(entity.getIsPublic());
     }
     if (entity.getDisplayName() != null) {
-      changeMade = true; analysis.setDisplayName(entity.getDisplayName());
+      changeMade = true; analysis.setDisplayName(Utils.checkNonEmpty("displayName", entity.getDisplayName()));
     }
     if (entity.getDescription() != null) {
       changeMade = true; analysis.setDescription(entity.getDescription());
