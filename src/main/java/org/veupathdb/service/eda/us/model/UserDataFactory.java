@@ -358,9 +358,9 @@ public class UserDataFactory {
     analysis.setCreationTime(Utils.formatTimestamp(rs.getTimestamp(COL_CREATION_TIME))); // timestamp not null,
     analysis.setModificationTime(Utils.formatTimestamp(rs.getTimestamp(COL_MODIFICATION_TIME))); // timestamp not null,
     analysis.setIsPublic(Resources.getUserPlatform().getBooleanValue(rs, COL_IS_PUBLIC, false)); // integer not null,
-    analysis.setNumFilters(rs.getInt(COL_NUM_FILTERS)); // integer not null,
-    analysis.setNumComputations(rs.getInt(COL_NUM_COMPUTATIONS)); // integer not null,
-    analysis.setNumVisualizations(rs.getInt(COL_NUM_VISUALIZATIONS)); // integer not null,
+    analysis.setNumFilters(rs.getLong(COL_NUM_FILTERS)); // integer not null,
+    analysis.setNumComputations(rs.getLong(COL_NUM_COMPUTATIONS)); // integer not null,
+    analysis.setNumVisualizations(rs.getLong(COL_NUM_VISUALIZATIONS)); // integer not null,
   }
 
   private static String getStringOrEmpty(ResultSet rs, String colName) throws SQLException {

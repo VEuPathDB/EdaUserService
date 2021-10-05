@@ -84,12 +84,12 @@ public class UserService implements UsersUserId {
     }
   }
 
-  private void performInheritGuestAnalyses(User user, Integer guestUserId) {
+  private void performInheritGuestAnalyses(User user, Long guestUserId) {
     if (guestUserId == null)
       return;
     if (user.isGuest())
       throw new BadRequestException("Guest users cannot inherit analyses.");
-    UserDataFactory.transferGuestAnalysesOwnership(guestUserId.longValue(), user.getUserID());
+    UserDataFactory.transferGuestAnalysesOwnership(guestUserId, user.getUserID());
   }
 
   @Override
