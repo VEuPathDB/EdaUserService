@@ -93,8 +93,15 @@ public class Utils {
 
   public static String checkNonEmpty(String key, String value) {
     if (value == null || value.trim().isEmpty()) {
-      throw new BadRequestException(key + " cannot be empty.");
+      throw new BadRequestException(key + " must not be empty.");
     }
     return value.trim();
+  }
+
+  public static String checkMaxSize(int maxSize, String key, String value) {
+    if (value != null && FormatUtil.getUtf8EncodedBytes(value).length > maxSize) {
+      throw new BadRequestException(key + " must not be larger than " + maxSize + " bytes.");
+    }
+    return value;
   }
 }

@@ -1,10 +1,8 @@
 package org.veupathdb.service.eda.us.model;
 
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import javax.ws.rs.BadRequestException;
 import org.gusdb.fgputil.EncryptionUtil;
 import org.gusdb.fgputil.functional.Functions;
 import org.veupathdb.service.eda.generated.model.AnalysisBase;
@@ -14,6 +12,9 @@ import org.veupathdb.service.eda.generated.model.AnalysisListPostRequest;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostResponse;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostResponseImpl;
 import org.veupathdb.service.eda.us.Utils;
+
+import static org.veupathdb.service.eda.us.Utils.checkMaxSize;
+import static org.veupathdb.service.eda.us.Utils.checkNonEmpty;
 
 /**
  * Non-API analysis data container; used to pass information about a single
@@ -50,11 +51,11 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
   }
 
   private void setBaseFields(AnalysisBase base) {
-    setDisplayName(Utils.checkNonEmpty("displayName", base.getDisplayName()));
-    setDescription(base.getDescription());
-    setStudyId(Utils.checkNonEmpty("studyId", base.getStudyId()));
-    setStudyVersion(base.getStudyVersion()); // TODO: will eventually need to be non-empty
-    setApiVersion(base.getApiVersion());     // TODO: will eventually need to be non-empty
+    setDisplayName(checkMaxSize(50, "displayName", checkNonEmpty("displayName", base.getDisplayName())));
+    setDescription(checkMaxSize(50, "description", base.getDescription()));
+    setStudyId(checkMaxSize(50, "studyId", checkNonEmpty("studyId", base.getStudyId())));
+    setStudyVersion(checkMaxSize(50, "studyVersion", base.getStudyVersion())); // TODO: will eventually need to be non-empty
+    setApiVersion(checkMaxSize(50, "apiVersion", base.getApiVersion()));       // TODO: will eventually need to be non-empty
   }
 
   public void setDescriptor(AnalysisDescriptor descriptor) {

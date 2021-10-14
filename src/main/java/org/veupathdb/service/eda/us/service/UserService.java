@@ -18,6 +18,9 @@ import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
+import static org.veupathdb.service.eda.us.Utils.checkMaxSize;
+import static org.veupathdb.service.eda.us.Utils.checkNonEmpty;
+
 @Authenticated(allowGuests = true)
 public class UserService implements UsersUserId {
 
@@ -111,10 +114,12 @@ public class UserService implements UsersUserId {
       changeMade = true; analysis.setIsPublic(entity.getIsPublic());
     }
     if (entity.getDisplayName() != null) {
-      changeMade = true; analysis.setDisplayName(Utils.checkNonEmpty("displayName", entity.getDisplayName()));
+      changeMade = true; analysis.setDisplayName(
+          checkMaxSize(50, "displayName", checkNonEmpty("displayName", entity.getDisplayName())));
     }
     if (entity.getDescription() != null) {
-      changeMade = true; analysis.setDescription(entity.getDescription());
+      changeMade = true; analysis.setDescription(
+          checkMaxSize(4000, "description", entity.getDescription()));
     }
     if (entity.getDescriptor() != null) {
       changeMade = true; analysis.setDescriptor(entity.getDescriptor());
