@@ -27,6 +27,8 @@ CREATE TABLE analysis (
   num_computations integer not null,
   num_visualizations integer not null,
   analysis_descriptor clob,
+  notes clob,
+  provenance clob,
   PRIMARY KEY (analysis_id)
 );
 ALTER TABLE analysis ADD FOREIGN KEY (user_id) REFERENCES users (user_id);

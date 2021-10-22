@@ -15,8 +15,12 @@ import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.veupathdb.lib.container.jaxrs.model.User;
+import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
+import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
 import org.veupathdb.service.eda.generated.model.AnalysisSummary;
 import org.veupathdb.service.eda.generated.model.AnalysisSummaryImpl;
+import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUser;
+import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUserImpl;
 import org.veupathdb.service.eda.us.Resources;
 import org.veupathdb.service.eda.us.Utils;
 
@@ -46,6 +50,9 @@ public class UserDataFactory {
   private static final String COL_NUM_COMPUTATIONS = "num_computations"; // integer not null,
   private static final String COL_NUM_VISUALIZATIONS = "num_visualizations"; // integer not null,
   private static final String COL_DESCRIPTOR = "analysis_descriptor"; // clob,
+  private static final String COL_NOTES = "notes"; // clob,
+  private static final String COL_PROVENANCE = "provenance"; // clob,
+
 
   private static final String[] SUMMARY_COLS = {
       COL_ANALYSIS_ID, // varchar(50) not null,
@@ -60,12 +67,16 @@ public class UserDataFactory {
       COL_IS_PUBLIC, // integer not null,
       COL_NUM_FILTERS, // integer not null,
       COL_NUM_COMPUTATIONS, // integer not null,
-      COL_NUM_VISUALIZATIONS // integer not null,
+      COL_NUM_VISUALIZATIONS, // integer not null,
+      COL_PROVENANCE // clob,
   };
 
   private static final String[] DETAIL_COLS = ArrayUtil.concatenate(
       SUMMARY_COLS,
-      new String[]{ COL_DESCRIPTOR }
+      new String[]{
+          COL_DESCRIPTOR,
+          COL_NOTES
+      }
   );
 
   private static final Integer[] DETAIL_COL_TYPES = new Integer[] {
@@ -82,7 +93,9 @@ public class UserDataFactory {
       Types.INTEGER, // num_filters
       Types.INTEGER, // num_computations
       Types.INTEGER, // num_visualizations
-      Types.CLOB // descriptor
+      Types.CLOB, // provenance
+      Types.CLOB, // descriptor
+      Types.CLOB // notes
   };
 
   private static String addSchema(String sqlConstant) {
@@ -244,8 +257,8 @@ public class UserDataFactory {
       Arrays.stream(DETAIL_COLS).map(c -> c + " = ?").collect(Collectors.joining(", ")) +
       " where " + COL_ANALYSIS_ID + " = ?";
 
-  public static int updateAnalysis(AnalysisDetailWithUser analysis) {
-    return new SQLRunner(
+  public static void updateAnalysis(AnalysisDetailWithUser analysis) {
+    int rowsUpdated = new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(UPDATE_ANALYSIS_SQL),
         "update-analysis"
@@ -259,6 +272,10 @@ public class UserDataFactory {
             new Integer[] { Types.VARCHAR } // extra ? for analysis_id in where statement
         )
     );
+    if (rowsUpdated != 1) {
+      throw new IllegalStateException("Updated " + rowsUpdated +
+          " rows (should be 1) in DB when updated analysis with ID " + analysis.getAnalysisId());
+    }
   }
 
   /***************************************************************************************
@@ -279,8 +296,7 @@ public class UserDataFactory {
     // construct prepared statement SQL with the right number of macros for all the IDs
     String[] stringArr = new String[idsToDelete.length];
     Arrays.fill(stringArr, "?");
-    String sql = DELETE_ANALYSES_SQL.replace(IDS_MACRO_LIST_MACRO,
-        Arrays.stream(stringArr).collect(Collectors.joining(", ")));
+    String sql = DELETE_ANALYSES_SQL.replace(IDS_MACRO_LIST_MACRO, String.join(", ", stringArr));
 
     new SQLRunner(
         Resources.getUserDataSource(),
@@ -310,7 +326,8 @@ public class UserDataFactory {
         rs -> {
           List<AnalysisSummaryWithUser> list = new ArrayList<>();
           while (rs.next()) {
-            AnalysisSummaryWithUser sum = new AnalysisSummaryWithUser(rs.getLong(COL_USER_ID));
+            AnalysisSummaryWithUser sum = new AnalysisSummaryWithUserImpl();
+            sum.setUserId(rs.getLong(COL_USER_ID));
             populateSummaryFields(sum, rs);
             list.add(sum);
           }
@@ -361,6 +378,7 @@ public class UserDataFactory {
     analysis.setNumFilters(rs.getLong(COL_NUM_FILTERS)); // integer not null,
     analysis.setNumComputations(rs.getLong(COL_NUM_COMPUTATIONS)); // integer not null,
     analysis.setNumVisualizations(rs.getLong(COL_NUM_VISUALIZATIONS)); // integer not null,
+    analysis.setProvenance(Utils.parseObject(Resources.getUserPlatform().getClobData(rs, COL_PROVENANCE), AnalysisProvenance.class)); // clob
   }
 
   private static String getStringOrEmpty(ResultSet rs, String colName) throws SQLException {
@@ -370,7 +388,8 @@ public class UserDataFactory {
   static void populateDetailFields(AnalysisDetailWithUser analysis, ResultSet rs) throws SQLException {
     analysis.setUserId(rs.getLong(COL_USER_ID));
     UserDataFactory.populateSummaryFields(analysis, rs);
-    analysis.setDescriptor(Utils.parseDescriptor(Resources.getUserPlatform().getClobData(rs, COL_DESCRIPTOR)));
+    analysis.setDescriptor(Utils.parseObject(Resources.getUserPlatform().getClobData(rs, COL_DESCRIPTOR), AnalysisDescriptor.class)); // clob
+    analysis.setNotes(Resources.getUserPlatform().getClobData(rs, COL_NOTES)); // clob
   }
 
   /***************************************************************************************
@@ -392,7 +411,9 @@ public class UserDataFactory {
         analysis.getNumFilters(),
         analysis.getNumComputations(),
         analysis.getNumVisualizations(),
-        Utils.formatDescriptor(analysis.getDescriptor())
+        Utils.formatObject(analysis.getProvenance()),
+        Utils.formatObject(analysis.getDescriptor()),
+        analysis.getNotes()
     };
   }
 }

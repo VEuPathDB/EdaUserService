@@ -11,10 +11,13 @@ import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
 import org.veupathdb.service.eda.generated.model.AnalysisDetail;
 import org.veupathdb.service.eda.generated.model.AnalysisListPatchRequest;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostRequest;
+import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
 import org.veupathdb.service.eda.generated.model.AnalysisSummary;
 import org.veupathdb.service.eda.generated.model.SingleAnalysisPatchRequest;
 import org.veupathdb.service.eda.generated.resources.UsersUserId;
 import org.veupathdb.service.eda.us.Utils;
+import org.veupathdb.service.eda.us.model.AccountDbData;
+import org.veupathdb.service.eda.us.model.AccountDbData.AccountDataPair;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
@@ -124,6 +127,9 @@ public class UserService implements UsersUserId {
     if (entity.getDescriptor() != null) {
       changeMade = true; analysis.setDescriptor(entity.getDescriptor());
     }
+    if (entity.getNotes() != null) {
+      changeMade = true; analysis.setNotes(entity.getNotes());
+    }
     if (changeMade) {
       analysis.setModificationTime(Utils.getCurrentDateTimeString());
     }
@@ -148,7 +154,8 @@ public class UserService implements UsersUserId {
     // make a copy of the analysis, assign a new owner, check display name (must be unique) and insert
     User newOwner = Utils.getActiveUser(_request);
     UserDataFactory.addUserIfAbsent(newOwner);
-    AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(newOwner.getUserID(), oldAnalysis);
+    AccountDataPair provenanceOwner = new AccountDbData().getUserDataById(userId);
+    AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(newOwner.getUserID(), oldAnalysis, provenanceOwner);
 
     UserDataFactory.insertAnalysis(newAnalysis);
 

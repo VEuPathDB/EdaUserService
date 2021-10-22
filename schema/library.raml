@@ -336,6 +336,18 @@ types:
       studyVersion: string
       apiVersion: string
       isPublic: boolean
+  AnalysisProvenance:
+    type: object
+    additionalProperties: false
+    properties:
+      ownerId: integer
+      ownerName: string
+      ownerOrganization: string
+      analysisId: string
+      analysisName: string
+      creationDate: string
+      modificationDate: string
+      wasPublic: boolean
   AnalysisSummary:
     type: AnalysisBase
     additionalProperties: false
@@ -346,6 +358,7 @@ types:
       numFilters: integer
       numComputations: integer
       numVisualizations: integer
+      provenance?: AnalysisProvenance
   AnalysisSummaryWithUser:
     type: AnalysisSummary
     additionalProperties: false
@@ -373,6 +386,7 @@ types:
     type: AnalysisSummary
     additionalProperties: false
     properties:
+      notes?: string
       descriptor: AnalysisDescriptor
   SingleAnalysisPatchRequest:
     type: object
@@ -380,6 +394,7 @@ types:
     properties:
       displayName?: string
       description?: string
+      notes?: string
       descriptor?: AnalysisDescriptor
       isPublic?: boolean
   DataTableConfig:

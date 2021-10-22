@@ -12,6 +12,18 @@ types:
       apiVersion: string
       isPublic: boolean
 
+  AnalysisProvenance:
+    additionalProperties: false
+    properties:
+      ownerId: integer
+      ownerName: string
+      ownerOrganization: string
+      analysisId: string
+      analysisName: string
+      creationDate: string
+      modificationDate: string
+      wasPublic: boolean
+
   AnalysisSummary:
     additionalProperties: false
     type: AnalysisBase
@@ -22,6 +34,7 @@ types:
       numFilters: integer
       numComputations: integer
       numVisualizations: integer
+      provenance?: AnalysisProvenance
 
   AnalysisSummaryWithUser:
     additionalProperties: false
@@ -52,6 +65,7 @@ types:
     additionalProperties: false
     type: AnalysisSummary
     properties:
+      notes?: string
       descriptor: AnalysisDescriptor
 
   SingleAnalysisPatchRequest:
@@ -59,6 +73,7 @@ types:
     properties:
       displayName?: string
       description?: string
+      notes?: string
       descriptor?: AnalysisDescriptor
       isPublic?: boolean
 
