@@ -336,7 +336,7 @@ types:
       studyVersion: string
       apiVersion: string
       isPublic: boolean
-  AnalysisProvenance:
+  OnImportProvenanceProps:
     type: object
     additionalProperties: false
     properties:
@@ -345,9 +345,21 @@ types:
       ownerOrganization: string
       analysisId: string
       analysisName: string
-      creationDate: string
-      modificationDate: string
-      wasPublic: boolean
+      creationTime: string
+      modificationTime: string
+      isPublic: boolean
+  CurrentProvenanceProps:
+    type: object
+    additionalProperties: false
+    properties:
+      isDeleted: boolean
+      modificationTime?: string
+  AnalysisProvenance:
+    type: object
+    additionalProperties: false
+    properties:
+      onImport: OnImportProvenanceProps
+      current: CurrentProvenanceProps
   AnalysisSummary:
     type: AnalysisBase
     additionalProperties: false

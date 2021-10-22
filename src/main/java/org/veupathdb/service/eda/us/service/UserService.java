@@ -11,7 +11,6 @@ import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
 import org.veupathdb.service.eda.generated.model.AnalysisDetail;
 import org.veupathdb.service.eda.generated.model.AnalysisListPatchRequest;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostRequest;
-import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
 import org.veupathdb.service.eda.generated.model.AnalysisSummary;
 import org.veupathdb.service.eda.generated.model.SingleAnalysisPatchRequest;
 import org.veupathdb.service.eda.generated.resources.UsersUserId;
@@ -19,6 +18,7 @@ import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.AccountDbData;
 import org.veupathdb.service.eda.us.model.AccountDbData.AccountDataPair;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
+import org.veupathdb.service.eda.us.model.ProvenancePropsLookup;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
 import static org.veupathdb.service.eda.us.Utils.checkMaxSize;
@@ -48,6 +48,7 @@ public class UserService implements UsersUserId {
   @Override
   public GetUsersAnalysesByUserIdResponse getUsersAnalysesByUserId(String userId) {
     List<AnalysisSummary> summaries = UserDataFactory.getAnalysisSummaries(Utils.getAuthorizedUser(_request, userId).getUserID());
+    ProvenancePropsLookup.assignCurrentProvenanceProps(summaries);
     return GetUsersAnalysesByUserIdResponse.respond200WithApplicationJson(summaries);
   }
 
@@ -65,6 +66,7 @@ public class UserService implements UsersUserId {
     User user = Utils.getAuthorizedUser(_request, userId);
     AnalysisDetailWithUser analysis = UserDataFactory.getAnalysisById(analysisId);
     Utils.verifyOwnership(user.getUserID(), analysis);
+    ProvenancePropsLookup.assignCurrentProvenanceProps(List.of(analysis));
     return GetUsersAnalysesByUserIdAndAnalysisIdResponse.respond200WithApplicationJson(analysis);
   }
 

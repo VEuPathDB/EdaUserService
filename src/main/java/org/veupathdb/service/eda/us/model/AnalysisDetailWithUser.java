@@ -13,6 +13,8 @@ import org.veupathdb.service.eda.generated.model.AnalysisListPostResponse;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostResponseImpl;
 import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
 import org.veupathdb.service.eda.generated.model.AnalysisProvenanceImpl;
+import org.veupathdb.service.eda.generated.model.OnImportProvenanceProps;
+import org.veupathdb.service.eda.generated.model.OnImportProvenancePropsImpl;
 import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.AccountDbData.AccountDataPair;
 
@@ -47,16 +49,18 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
   }
 
   private static AnalysisProvenance createProvenance(AnalysisDetailWithUser source, AccountDataPair provenanceOwner) {
-    AnalysisProvenance p = new AnalysisProvenanceImpl();
-    p.setAnalysisId(source.getAnalysisId());
-    p.setAnalysisName(source.getDisplayName());
-    p.setOwnerId(source.getUserId());
-    p.setOwnerName(provenanceOwner.getName());
-    p.setOwnerOrganization(provenanceOwner.getOrganization());
-    p.setCreationDate(source.getCreationTime());
-    p.setModificationDate(source.getModificationTime());
-    p.setWasPublic(source.getIsPublic());
-    return p;
+    AnalysisProvenance provenance = new AnalysisProvenanceImpl();
+    OnImportProvenanceProps importProps = new OnImportProvenancePropsImpl();
+    importProps.setAnalysisId(source.getAnalysisId());
+    importProps.setAnalysisName(source.getDisplayName());
+    importProps.setOwnerId(source.getUserId());
+    importProps.setOwnerName(provenanceOwner.getName());
+    importProps.setOwnerOrganization(provenanceOwner.getOrganization());
+    importProps.setCreationTime(source.getCreationTime());
+    importProps.setModificationTime(source.getModificationTime());
+    importProps.setIsPublic(source.getIsPublic());
+    provenance.setOnImport(importProps);
+    return provenance;
   }
 
   private void setInitializationFields(long ownerId) {

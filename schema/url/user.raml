@@ -12,7 +12,7 @@ types:
       apiVersion: string
       isPublic: boolean
 
-  AnalysisProvenance:
+  OnImportProvenanceProps:
     additionalProperties: false
     properties:
       ownerId: integer
@@ -20,9 +20,22 @@ types:
       ownerOrganization: string
       analysisId: string
       analysisName: string
-      creationDate: string
-      modificationDate: string
-      wasPublic: boolean
+      creationTime: string
+      modificationTime: string
+      isPublic: boolean
+
+  CurrentProvenanceProps:
+    additionalProperties: false
+    properties:
+      isDeleted: boolean
+      modificationTime?: string
+
+  AnalysisProvenance:
+    additionalProperties: false
+    properties:
+      onImport: OnImportProvenanceProps
+      current: CurrentProvenanceProps
+
 
   AnalysisSummary:
     additionalProperties: false

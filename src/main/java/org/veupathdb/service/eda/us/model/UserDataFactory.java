@@ -14,13 +14,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
+import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
 import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
+import org.veupathdb.service.eda.generated.model.AnalysisProvenanceImpl;
 import org.veupathdb.service.eda.generated.model.AnalysisSummary;
 import org.veupathdb.service.eda.generated.model.AnalysisSummaryImpl;
 import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUser;
 import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUserImpl;
+import org.veupathdb.service.eda.generated.model.OnImportProvenanceProps;
 import org.veupathdb.service.eda.us.Resources;
 import org.veupathdb.service.eda.us.Utils;
 
@@ -206,24 +209,30 @@ public class UserDataFactory {
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public static AnalysisDetailWithUser getAnalysisById(String analysisId) {
-    return new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(GET_ANALYSIS_BY_ID_SQL),
-        "analysis-detail"
-    ).executeQuery(
-        new Object[]{ analysisId },
-        new Integer[]{ Types.VARCHAR },
-        rs -> {
-          if (!rs.next()) {
-            throw new NotFoundException();
+    try {
+      return new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(GET_ANALYSIS_BY_ID_SQL),
+          "analysis-detail"
+      ).executeQuery(
+          new Object[]{ analysisId },
+          new Integer[]{ Types.VARCHAR },
+          rs -> {
+            if (!rs.next()) {
+              throw new NotFoundException();
+            }
+            AnalysisDetailWithUser analysis = new AnalysisDetailWithUser(rs);
+            if (rs.next()) {
+              throw new IllegalStateException("More than one analysis found with ID: " + analysisId);
+            }
+            return analysis;
           }
-          AnalysisDetailWithUser analysis = new AnalysisDetailWithUser(rs);
-          if (rs.next()) {
-            throw new IllegalStateException("More than one analysis found with ID: " + analysisId);
-          }
-          return analysis;
-        }
-    );
+      );
+    }
+    catch (SQLRunnerException e) {
+      // throw underlying exception if able
+      throw e.getCause() != null && e.getCause() instanceof RuntimeException ? (RuntimeException)e.getCause() : e;
+    }
   }
 
   /***************************************************************************************
@@ -378,7 +387,15 @@ public class UserDataFactory {
     analysis.setNumFilters(rs.getLong(COL_NUM_FILTERS)); // integer not null,
     analysis.setNumComputations(rs.getLong(COL_NUM_COMPUTATIONS)); // integer not null,
     analysis.setNumVisualizations(rs.getLong(COL_NUM_VISUALIZATIONS)); // integer not null,
-    analysis.setProvenance(Utils.parseObject(Resources.getUserPlatform().getClobData(rs, COL_PROVENANCE), AnalysisProvenance.class)); // clob
+    analysis.setProvenance(createProvenance(Resources.getUserPlatform().getClobData(rs, COL_PROVENANCE))); // clob
+  }
+
+  private static AnalysisProvenance createProvenance(String onImportPropsString) {
+    if (onImportPropsString == null) return null;
+    AnalysisProvenance provenance = new AnalysisProvenanceImpl();
+    provenance.setOnImport(Utils.parseObject(onImportPropsString, OnImportProvenanceProps.class));
+    // current props will be assigned later
+    return provenance;
   }
 
   private static String getStringOrEmpty(ResultSet rs, String colName) throws SQLException {
@@ -411,7 +428,7 @@ public class UserDataFactory {
         analysis.getNumFilters(),
         analysis.getNumComputations(),
         analysis.getNumVisualizations(),
-        Utils.formatObject(analysis.getProvenance()),
+        analysis.getProvenance() == null ? null : Utils.formatObject(analysis.getProvenance().getOnImport()),
         Utils.formatObject(analysis.getDescriptor()),
         analysis.getNotes()
     };
