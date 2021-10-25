@@ -17,6 +17,7 @@ import org.gusdb.fgputil.json.JsonUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.providers.UserProvider;
 import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
+import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
@@ -41,11 +42,11 @@ public class Utils {
   }
 
   public static String getCurrentDateTimeString() {
-    return FormatUtil.formatDateTime(new Date());
+    return FormatUtil.formatDateTimeNoTimezone(new Date());
   }
 
   public static String formatTimestamp(Timestamp timestamp) {
-    return FormatUtil.formatDateTime(new Date(timestamp.getTime()));
+    return FormatUtil.formatDateTimeNoTimezone(new Date(timestamp.getTime()));
   }
 
   public static Date parseDate(String dateString) {
@@ -73,21 +74,21 @@ public class Utils {
     }
   }
 
-  public static AnalysisDescriptor parseDescriptor(String descriptorStr) {
+  public static <T> T parseObject(String jsonString, Class<T> clazz) {
     try {
-      return JsonUtil.Jackson.readValue(descriptorStr, AnalysisDescriptor.class);
+      return jsonString == null ? null : JsonUtil.Jackson.readValue(jsonString, clazz);
     }
     catch (JsonProcessingException e) {
-      throw new RuntimeException("Could not map descriptor string to an AnalysisDescriptor object", e);
+      throw new RuntimeException("Could not map JSON string to a " + clazz.getName() + " object", e);
     }
   }
 
-  public static String formatDescriptor(AnalysisDescriptor descriptor) {
+  public static String formatObject(Object obj) {
     try {
-      return JsonUtil.Jackson.writerFor(AnalysisDescriptor.class).writeValueAsString(descriptor);
+      return JsonUtil.Jackson.writeValueAsString(obj);
     }
     catch (JsonProcessingException e) {
-      throw new RuntimeException("Could not serialize analysis descriptor", e);
+      throw new RuntimeException("Could not serialize " + obj.getClass().getName(), e);
     }
   }
 

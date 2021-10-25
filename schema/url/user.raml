@@ -12,6 +12,31 @@ types:
       apiVersion: string
       isPublic: boolean
 
+  OnImportProvenanceProps:
+    additionalProperties: false
+    properties:
+      ownerId: integer
+      ownerName: string
+      ownerOrganization: string
+      analysisId: string
+      analysisName: string
+      creationTime: string
+      modificationTime: string
+      isPublic: boolean
+
+  CurrentProvenanceProps:
+    additionalProperties: false
+    properties:
+      isDeleted: boolean
+      modificationTime?: string
+
+  AnalysisProvenance:
+    additionalProperties: false
+    properties:
+      onImport: OnImportProvenanceProps
+      current: CurrentProvenanceProps
+
+
   AnalysisSummary:
     additionalProperties: false
     type: AnalysisBase
@@ -22,6 +47,7 @@ types:
       numFilters: integer
       numComputations: integer
       numVisualizations: integer
+      provenance?: AnalysisProvenance
 
   AnalysisSummaryWithUser:
     additionalProperties: false
@@ -52,6 +78,7 @@ types:
     additionalProperties: false
     type: AnalysisSummary
     properties:
+      notes?: string
       descriptor: AnalysisDescriptor
 
   SingleAnalysisPatchRequest:
@@ -59,6 +86,7 @@ types:
     properties:
       displayName?: string
       description?: string
+      notes?: string
       descriptor?: AnalysisDescriptor
       isPublic?: boolean
 
