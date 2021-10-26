@@ -1,6 +1,7 @@
 package org.veupathdb.service.eda.us.service;
 
 import java.util.List;
+import java.util.Optional;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Context;
@@ -147,20 +148,7 @@ public class UserService implements UsersUserId {
 
   @Override
   public PostUsersAnalysesCopyByUserIdAndAnalysisIdResponse postUsersAnalysesCopyByUserIdAndAnalysisId(String userIdStr, String analysisId) {
-
-    // verify URL's userId and analysisId exist and match
-    long userId = FormatUtil.isLong(userIdStr) ? Long.valueOf(userIdStr) : Utils.doThrow(new NotFoundException());
-    AnalysisDetailWithUser oldAnalysis = UserDataFactory.getAnalysisById(analysisId);
-    Utils.verifyOwnership(userId, oldAnalysis);
-
-    // make a copy of the analysis, assign a new owner, check display name (must be unique) and insert
-    User newOwner = Utils.getActiveUser(_request);
-    UserDataFactory.addUserIfAbsent(newOwner);
-    AccountDataPair provenanceOwner = new AccountDbData().getUserDataById(userId);
-    AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(newOwner.getUserID(), oldAnalysis, provenanceOwner);
-
-    UserDataFactory.insertAnalysis(newAnalysis);
-
-    return PostUsersAnalysesCopyByUserIdAndAnalysisIdResponse.respond200WithApplicationJson(newAnalysis.getIdObject());
+    return PostUsersAnalysesCopyByUserIdAndAnalysisIdResponse.respond200WithApplicationJson(
+        ImportAnalysisService.importAnalysis(analysisId, Optional.of(userIdStr), _request));
   }
 }

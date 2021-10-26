@@ -35,6 +35,17 @@ securitySchemes:
             application/json:
               type: lib.AnalysisSummaryWithUser[]
 
+# Note this is identical to the analyses/{id}/copy endpoint without the user validation
+/import-analysis:
+  /{analysis-id}:
+    displayName: Copy an existing analysis
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: lib.AnalysisListPostResponse
+
 /users/{user-id}:
 
   /preferences:
