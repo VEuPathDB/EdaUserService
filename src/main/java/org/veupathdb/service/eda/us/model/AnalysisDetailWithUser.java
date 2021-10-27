@@ -3,7 +3,6 @@ package org.veupathdb.service.eda.us.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.gusdb.fgputil.EncryptionUtil;
 import org.gusdb.fgputil.functional.Functions;
 import org.veupathdb.service.eda.generated.model.AnalysisBase;
 import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
@@ -68,7 +67,7 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
     setUserId(ownerId);
     setCreationTime(now);
     setModificationTime(now);
-    setAnalysisId(EncryptionUtil.encrypt(getUserId() + now));
+    setAnalysisId(IdGenerator.getNextAnalysisId());
   }
 
   private void setBaseFields(AnalysisBase base) {
