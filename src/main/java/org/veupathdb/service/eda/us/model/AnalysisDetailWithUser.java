@@ -36,6 +36,7 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
     setInitializationFields(ownerId);
     setBaseFields(request);
     setDescriptor(request.getDescriptor());
+    setNotes(request.getNotes());
     setIsPublic(request.getIsPublic());
   }
 
@@ -43,6 +44,7 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
     setInitializationFields(ownerId);
     setBaseFields(source);
     setDescriptor(source.getDescriptor());
+    setNotes(source.getNotes());
     setIsPublic(false);
     setProvenance(createProvenance(source, provenanceOwner));
   }
@@ -72,7 +74,7 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
 
   private void setBaseFields(AnalysisBase base) {
     setDisplayName(checkMaxSize(50, "displayName", checkNonEmpty("displayName", base.getDisplayName())));
-    setDescription(checkMaxSize(50, "description", base.getDescription()));
+    setDescription(checkMaxSize(4000, "description", base.getDescription()));
     setStudyId(checkMaxSize(50, "studyId", checkNonEmpty("studyId", base.getStudyId())));
     setStudyVersion(checkMaxSize(50, "studyVersion", base.getStudyVersion())); // TODO: will eventually need to be non-empty
     setApiVersion(checkMaxSize(50, "apiVersion", base.getApiVersion()));       // TODO: will eventually need to be non-empty

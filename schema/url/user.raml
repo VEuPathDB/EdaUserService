@@ -2,6 +2,7 @@
 
 types:
 
+  # Properties that are present in every representation of an analysis
   AnalysisBase:
     additionalProperties: false
     properties:
@@ -36,7 +37,6 @@ types:
       onImport: OnImportProvenanceProps
       current: CurrentProvenanceProps
 
-
   AnalysisSummary:
     additionalProperties: false
     type: AnalysisBase
@@ -49,6 +49,7 @@ types:
       numVisualizations: integer
       provenance?: AnalysisProvenance
 
+  # supports public analyses endpoint
   AnalysisSummaryWithUser:
     additionalProperties: false
     type: AnalysisSummary
@@ -61,6 +62,7 @@ types:
     additionalProperties: false
     type: AnalysisBase
     properties:
+      notes?: string
       descriptor: AnalysisDescriptor
 
   AnalysisListPostResponse:
@@ -127,4 +129,3 @@ types:
       visualizationId: string
       displayName: string
       descriptor: object
-
