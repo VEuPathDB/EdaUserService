@@ -16,8 +16,6 @@ import org.gusdb.fgputil.FormatUtil;
 import org.gusdb.fgputil.json.JsonUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.providers.UserProvider;
-import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
-import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
