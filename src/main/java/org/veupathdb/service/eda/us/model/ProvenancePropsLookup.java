@@ -11,18 +11,20 @@ import org.veupathdb.service.eda.generated.model.CurrentProvenancePropsImpl;
 
 public class ProvenancePropsLookup {
 
-  private static CurrentProvenanceProps toCurrentProps(String modTime) {
+  private static CurrentProvenanceProps toCurrentProps(String modTime, Boolean isPublic) {
     CurrentProvenanceProps currentState = new CurrentProvenancePropsImpl();
     currentState.setIsDeleted(modTime == null);
     currentState.setModificationTime(modTime);
+    currentState.setIsPublic(isPublic);
     return currentState;
   }
 
-  public static void assignCurrentProvenanceProps(List<AnalysisSummary> summaries) {
+  public static void assignCurrentProvenanceProps(List<? extends AnalysisSummary> summaries) {
     Map<String, CurrentProvenanceProps> idToCurrentPropsCache = new HashMap<>();
     // add all mod dates in the current list to save lookups already done
     summaries.stream().forEach(a ->
-        idToCurrentPropsCache.put(a.getAnalysisId(), toCurrentProps(a.getModificationTime())));
+        idToCurrentPropsCache.put(a.getAnalysisId(),
+            toCurrentProps(a.getModificationTime(), a.getIsPublic())));
     summaries.stream().forEach(a -> {
       AnalysisProvenance prov = a.getProvenance();
       if (prov != null) {
@@ -32,11 +34,15 @@ public class ProvenancePropsLookup {
           // still need to look up
           try {
             // try to find parent analysis (may have been deleted)
-            currentProps = toCurrentProps(UserDataFactory.getAnalysisById(parentId).getModificationTime());
+            AnalysisDetailWithUser parentAnalysis = UserDataFactory.getAnalysisById(parentId);
+            currentProps = toCurrentProps(
+                parentAnalysis.getModificationTime(),
+                parentAnalysis.getIsPublic()
+            );
           }
           catch (NotFoundException e) {
             // parent has been deleted
-            currentProps = toCurrentProps(null);
+            currentProps = toCurrentProps(null, null);
           }
           idToCurrentPropsCache.put(parentId, currentProps);
         }
