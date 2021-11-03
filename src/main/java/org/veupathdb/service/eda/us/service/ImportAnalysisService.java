@@ -8,6 +8,8 @@ import org.gusdb.fgputil.FormatUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostResponse;
+import org.veupathdb.service.eda.generated.model.SingleAnalysisPublicInfo;
+import org.veupathdb.service.eda.generated.model.SingleAnalysisPublicInfoImpl;
 import org.veupathdb.service.eda.generated.resources.ImportAnalysis;
 import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.AccountDbData;
@@ -23,6 +25,14 @@ public class ImportAnalysisService implements ImportAnalysis {
   @Override
   public GetImportAnalysisByAnalysisIdResponse getImportAnalysisByAnalysisId(String analysisId) {
     return GetImportAnalysisByAnalysisIdResponse.respond200WithApplicationJson(importAnalysis(analysisId, Optional.empty(), _request));
+  }
+
+  @Override
+  public GetImportAnalysisInfoByAnalysisIdResponse getImportAnalysisInfoByAnalysisId(String analysisId) {
+    AnalysisDetailWithUser analysis = UserDataFactory.getAnalysisById(analysisId);
+    SingleAnalysisPublicInfo info = new SingleAnalysisPublicInfoImpl();
+    info.setStudyId(analysis.getStudyId());
+    return GetImportAnalysisInfoByAnalysisIdResponse.respond200WithApplicationJson(info);
   }
 
   public static AnalysisListPostResponse importAnalysis(String analysisId, Optional<String> userIdOpt, Request request) {

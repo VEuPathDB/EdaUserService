@@ -46,6 +46,15 @@ securitySchemes:
             application/json:
               type: lib.AnalysisListPostResponse
 
+    /info:
+      displayName: Returns public information about an analysis
+      get:
+        responses:
+          200:
+            body:
+              application/json:
+                type: lib.SingleAnalysisPublicInfo
+
 /users/{user-id}:
 
   /preferences:
