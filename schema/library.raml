@@ -7,134 +7,131 @@
 ################################################################################
 
 types:
-  AnalysisBase:
+  VariableSpec:
     type: object
     additionalProperties: false
     properties:
-      displayName: string
-      description: string
+      entityId: string
+      variableId: string
+  DerivationType:
+    type: string
+    enum:
+      - transform
+      - reduction
+  DerivedVariable:
+    type: VariableSpec
+    properties:
+      variableType: API_VariableType
+      variableDataShape: API_VariableDataShape
+      derivationType: DerivationType
+      functionName: string
+      inputVars: VariableSpec[]
+      config: object # TBD
+  MergedEntityTabularPostRequest:
+    type: object
+    additionalProperties: false
+    properties:
       studyId: string
-      studyVersion: string
-      apiVersion: string
-      isPublic: boolean
-  OnImportProvenanceProps:
-    type: object
-    additionalProperties: false
-    properties:
-      ownerId: integer
-      ownerName: string
-      ownerOrganization: string
-      analysisId: string
-      analysisName: string
-      creationTime: string
-      modificationTime: string
-      isPublic: boolean
-  CurrentProvenanceProps:
-    type: object
-    additionalProperties: false
-    properties:
-      isDeleted: boolean
-      modificationTime?: string
-      isPublic?: boolean
-  AnalysisProvenance:
-    type: object
-    additionalProperties: false
-    properties:
-      onImport: OnImportProvenanceProps
-      current: CurrentProvenanceProps
-  AnalysisSummary:
-    type: AnalysisBase
-    additionalProperties: false
-    properties:
-      analysisId: string
-      creationTime: string
-      modificationTime: string
-      numFilters: integer
-      numComputations: integer
-      numVisualizations: integer
-      provenance?: AnalysisProvenance
-  AnalysisSummaryWithUser:
-    type: AnalysisSummary
-    additionalProperties: false
-    properties:
-      userId: number
-      userName: string
-      userOrganization: string
-  AnalysisListPostRequest:
-    type: AnalysisBase
-    additionalProperties: false
-    properties:
-      notes?: string
-      descriptor: AnalysisDescriptor
-  AnalysisListPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      analysisId: string
-  AnalysisListPatchRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      analysisIdsToDelete?: string[]
-      inheritOwnershipFrom?: integer
-  AnalysisDetail:
-    type: AnalysisSummary
-    additionalProperties: false
-    properties:
-      notes?: string
-      descriptor: AnalysisDescriptor
-  SingleAnalysisPatchRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      displayName?: string
-      description?: string
-      notes?: string
-      descriptor?: AnalysisDescriptor
-      isPublic?: boolean
-  DataTableConfig:
-    type: object
-    additionalProperties: false
-    properties:
-      variables: VariableSpec[]
-      sorting: SortSpecEntry[]
-  DataTableConfigSet:
-    type: object
-    properties:
-      //: DataTableConfig
-  AnalysisDescriptor:
-    type: object
-    additionalProperties: false
-    properties:
-      subset:
-        type: object
-        properties:
-          descriptor: object[]
-          uiSettings?: object
-      computations: Computation[]
-      starredVariables: VariableSpec[]
-      dataTableConfig: DataTableConfigSet
+      filters: API_Filter[]
+      entityId: string
+      outputVariables: VariableSpec[]
       derivedVariables: DerivedVariable[]
-  Computation:
+  EntityCountPostRequest:
     type: object
     additionalProperties: false
     properties:
-      computationId: string
-      displayName: string
-      descriptor: object
-      visualizations: Visualization[]
-  Visualization:
+      filters: API_Filter[]
+  EntityCountPostResponse:
     type: object
     additionalProperties: false
     properties:
-      visualizationId: string
-      displayName: string
-      descriptor: object
-  SingleAnalysisPublicInfo:
+      count: integer
+  EntityTabularPostRequest:
     type: object
     additionalProperties: false
     properties:
-      studyId: string
+      filters: API_Filter[]
+      outputVariableIds: string[]
+      reportConfig?: API_TabularReportConfig
+  EntityTabularPostResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      counts: string[][]
+  SortDirection:
+    type: string
+    enum:
+      - asc
+      - desc
+  SortSpecEntry:
+    type: object
+    additionalProperties: false
+    properties:
+      key: string
+      direction: SortDirection
+  API_PagingConfig:
+    type: object
+    properties:
+      numRows: integer
+      offset: integer
+  API_TabularReportConfig:
+    type: object
+    properties:
+      sorting?: SortSpecEntry[]
+      paging?: API_PagingConfig
+  BinUnits:
+    type: string
+    enum:
+      - day
+      - week
+      - month
+      - year
+  BinSpecWithRange:
+    type: object
+    additionalProperties: false
+    properties:
+      displayRangeMin: any
+      displayRangeMax: any
+      binWidth: number
+      binUnits?: BinUnits
+  ValueSpec:
+    type: string
+    enum:
+      - count
+      - proportion
+  VariableDistributionPostRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      filters: API_Filter[]
+      binSpec?: BinSpecWithRange
+      valueSpec: ValueSpec
+  HistogramBin:
+    type: object
+    additionalProperties: false
+    properties:
+      value: number
+      binStart: string
+      binEnd: string
+      binLabel: string
+  HistogramStats:
+    type: object
+    additionalProperties: false
+    properties:
+      subsetSize: integer
+      subsetMin?: any
+      subsetMax?: any
+      subsetMean?: any
+      numVarValues: integer
+      numDistinctValues: integer
+      numDistinctEntityRecords: integer
+      numMissingCases: integer
+  VariableDistributionPostResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      histogram: HistogramBin[]
+      statistics: HistogramStats
   StudiesGetResponse:
     type: object
     additionalProperties: false
@@ -149,13 +146,11 @@ types:
     type: object
     properties:
       id: string
-      datasetId: string
   EntityIdGetResponse: API_Entity
   API_StudyDetail:
     type: object
     properties:
       id: string
-      datasetId: string
       rootEntity: API_Entity
   API_Entity:
     type: object
@@ -329,129 +324,132 @@ types:
       variableId: string
       left: number
       right: number
-  VariableSpec:
+  AnalysisBase:
     type: object
     additionalProperties: false
     properties:
-      entityId: string
-      variableId: string
-  DerivationType:
-    type: string
-    enum:
-      - transform
-      - reduction
-  DerivedVariable:
-    type: VariableSpec
+      displayName: string
+      description: string
+      studyId: string
+      studyVersion: string
+      apiVersion: string
+      isPublic: boolean
+  OnImportProvenanceProps:
+    type: object
+    additionalProperties: false
     properties:
-      variableType: API_VariableType
-      variableDataShape: API_VariableDataShape
-      derivationType: DerivationType
-      functionName: string
-      inputVars: VariableSpec[]
-      config: object # TBD
-  MergedEntityTabularPostRequest:
+      ownerId: integer
+      ownerName: string
+      ownerOrganization: string
+      analysisId: string
+      analysisName: string
+      creationTime: string
+      modificationTime: string
+      isPublic: boolean
+  CurrentProvenanceProps:
+    type: object
+    additionalProperties: false
+    properties:
+      isDeleted: boolean
+      modificationTime?: string
+      isPublic?: boolean
+  AnalysisProvenance:
+    type: object
+    additionalProperties: false
+    properties:
+      onImport: OnImportProvenanceProps
+      current: CurrentProvenanceProps
+  AnalysisSummary:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      analysisId: string
+      creationTime: string
+      modificationTime: string
+      numFilters: integer
+      numComputations: integer
+      numVisualizations: integer
+      provenance?: AnalysisProvenance
+  AnalysisSummaryWithUser:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      userId: number
+      userName: string
+      userOrganization: string
+  AnalysisListPostRequest:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      notes?: string
+      descriptor: AnalysisDescriptor
+  AnalysisListPostResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisId: string
+  AnalysisListPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisIdsToDelete?: string[]
+      inheritOwnershipFrom?: integer
+  AnalysisDetail:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      notes?: string
+      descriptor: AnalysisDescriptor
+  SingleAnalysisPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName?: string
+      description?: string
+      notes?: string
+      descriptor?: AnalysisDescriptor
+      isPublic?: boolean
+  DataTableConfig:
+    type: object
+    additionalProperties: false
+    properties:
+      variables: VariableSpec[]
+      sorting: SortSpecEntry[]
+  DataTableConfigSet:
+    type: object
+    properties:
+      //: DataTableConfig
+  AnalysisDescriptor:
+    type: object
+    additionalProperties: false
+    properties:
+      subset:
+        type: object
+        properties:
+          descriptor: object[]
+          uiSettings?: object
+      computations: Computation[]
+      starredVariables: VariableSpec[]
+      dataTableConfig: DataTableConfigSet
+      derivedVariables: DerivedVariable[]
+  Computation:
+    type: object
+    additionalProperties: false
+    properties:
+      computationId: string
+      displayName: string
+      descriptor: object
+      visualizations: Visualization[]
+  Visualization:
+    type: object
+    additionalProperties: false
+    properties:
+      visualizationId: string
+      displayName: string
+      descriptor: object
+  SingleAnalysisPublicInfo:
     type: object
     additionalProperties: false
     properties:
       studyId: string
-      filters: API_Filter[]
-      entityId: string
-      outputVariables: VariableSpec[]
-      derivedVariables: DerivedVariable[]
-  EntityCountPostRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      filters: API_Filter[]
-  EntityCountPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      count: integer
-  EntityTabularPostRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      filters: API_Filter[]
-      outputVariableIds: string[]
-      reportConfig?: API_TabularReportConfig
-  EntityTabularPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      counts: string[][]
-  SortDirection:
-    type: string
-    enum:
-      - asc
-      - desc
-  SortSpecEntry:
-    type: object
-    additionalProperties: false
-    properties:
-      key: string
-      direction: SortDirection
-  API_PagingConfig:
-    type: object
-    properties:
-      numRows: integer
-      offset: integer
-  API_TabularReportConfig:
-    type: object
-    properties:
-      sorting?: SortSpecEntry[]
-      paging?: API_PagingConfig
-  BinUnits:
-    type: string
-    enum:
-      - day
-      - week
-      - month
-      - year
-  BinSpecWithRange:
-    type: object
-    additionalProperties: false
-    properties:
-      displayRangeMin: any
-      displayRangeMax: any
-      binWidth: number
-      binUnits?: BinUnits
-  ValueSpec:
-    type: string
-    enum:
-      - count
-      - proportion
-  VariableDistributionPostRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      filters: API_Filter[]
-      binSpec?: BinSpecWithRange
-      valueSpec: ValueSpec
-  HistogramBin:
-    type: object
-    additionalProperties: false
-    properties:
-      value: number
-      binStart: string
-      binEnd: string
-      binLabel: string
-  HistogramStats:
-    type: object
-    additionalProperties: false
-    properties:
-      subsetSize: integer
-      subsetMin?: any
-      subsetMax?: any
-      subsetMean?: any
-      numVarValues: integer
-      numDistinctValues: integer
-      numDistinctEntityRecords: integer
-      numMissingCases: integer
-  VariableDistributionPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      histogram: HistogramBin[]
-      statistics: HistogramStats
 
