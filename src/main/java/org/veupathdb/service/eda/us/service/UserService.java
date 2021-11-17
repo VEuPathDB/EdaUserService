@@ -95,6 +95,7 @@ public class UserService implements UsersUserId {
       return;
     if (user.isGuest())
       throw new BadRequestException("Guest users cannot inherit analyses.");
+    UserDataFactory.addUserIfAbsent(user);
     UserDataFactory.transferGuestAnalysesOwnership(guestUserId, user.getUserID());
   }
 
