@@ -25,18 +25,18 @@ securitySchemes:
 # Endpoints
 #
 
-/public:
-  /analyses:
-    displayName: Provide a list of public analyses
-    get:
-      responses:
-        200:
-          body:
-            application/json:
-              type: lib.AnalysisSummaryWithUser[]
+/public/analyses/{project-id}:
+  displayName: Provide a list of public analyses
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+            type: lib.AnalysisSummaryWithUser[]
 
 # Note this is identical to the analyses/{id}/copy endpoint without the user validation
-/import-analysis:
+/import-analysis/{project-id}:
+
   /{analysis-id}:
     displayName: Copy an existing analysis
     get:
@@ -57,7 +57,7 @@ securitySchemes:
 
 /users/{user-id}:
 
-  /preferences:
+  /preferences/{project-id}:
     displayName: EDA-related user preferences
     get:
       responses:
@@ -72,7 +72,7 @@ securitySchemes:
       responses:
         202:
 
-  /analyses:
+  /{project-id}/analyses:
     displayName: Analyses of a single user
     get:
       responses:

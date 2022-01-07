@@ -56,8 +56,8 @@ public class Utils {
     }
   }
 
-  public static void verifyOwnership(long userId, String... ids) {
-    List<String> usersAnalysisIds = UserDataFactory.getAnalysisSummaries(userId).stream()
+  public static void verifyOwnership(UserDataFactory dataFactory, long userId, String... ids) {
+    List<String> usersAnalysisIds = dataFactory.getAnalysisSummaries(userId).stream()
         .map(sum -> sum.getAnalysisId()).collect(Collectors.toList());
     List<String> badIds = Arrays.stream(ids)
         .filter(id -> !usersAnalysisIds.contains(id)).collect(Collectors.toList());
