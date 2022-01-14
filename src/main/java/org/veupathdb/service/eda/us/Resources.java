@@ -41,11 +41,9 @@ public class Resources extends ContainerResources {
     super(opts);
 
     // check for valid project-specific props
-    LOG.info("Environment: " + FormatUtil.prettyPrint(System.getenv(), FormatUtil.Style.MULTI_LINE));
     SCHEMA_MAP = new ProjectSpecificProperties<>(
         new PropertySpec[] { required(USER_SCHEMA_PROP) },
         map -> {
-          LOG.info("Another map: " + FormatUtil.prettyPrint(map));
           // add trailing '.' to schema names for convenience later
           String rawSchemaName = map.get(USER_SCHEMA_PROP);
           return rawSchemaName + (rawSchemaName.endsWith(".") ? "" : ".");
