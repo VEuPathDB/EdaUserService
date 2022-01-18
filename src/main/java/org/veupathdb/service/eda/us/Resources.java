@@ -1,9 +1,14 @@
 package org.veupathdb.service.eda.us;
 
+import java.util.Map;
+import javax.ws.rs.NotFoundException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.fgputil.FormatUtil;
 import org.gusdb.fgputil.db.platform.DBPlatform;
 import org.gusdb.fgputil.db.platform.Oracle;
+import org.gusdb.fgputil.runtime.ProjectSpecificProperties;
+import org.gusdb.fgputil.runtime.ProjectSpecificProperties.PropertySpec;
 import org.veupathdb.lib.container.jaxrs.config.Options;
 import org.veupathdb.lib.container.jaxrs.server.ContainerResources;
 import org.veupathdb.lib.container.jaxrs.utils.db.DbManager;
@@ -14,6 +19,7 @@ import org.veupathdb.service.eda.us.service.UserService;
 import javax.sql.DataSource;
 
 import static org.gusdb.fgputil.runtime.Environment.getOptionalVar;
+import static org.gusdb.fgputil.runtime.ProjectSpecificProperties.PropertySpec.required;
 
 /**
  * Service Resource Registration.
@@ -28,8 +34,22 @@ public class Resources extends ContainerResources {
   private static final boolean DEVELOPMENT_MODE =
       Boolean.valueOf(getOptionalVar("DEVELOPMENT_MODE", "true"));
 
+  private static final String USER_SCHEMA_PROP = "USER_SCHEMA";
+  private static Map<String,String> SCHEMA_MAP;
+
   public Resources(Options opts) {
     super(opts);
+
+    // check for valid project-specific props
+    SCHEMA_MAP = new ProjectSpecificProperties<>(
+        new PropertySpec[] { required(USER_SCHEMA_PROP) },
+        map -> {
+          // add trailing '.' to schema names for convenience later
+          String rawSchemaName = map.get(USER_SCHEMA_PROP);
+          return rawSchemaName + (rawSchemaName.endsWith(".") ? "" : ".");
+        }
+    ).toMap();
+    LOG.info("Schema map: " + FormatUtil.prettyPrint(SCHEMA_MAP, FormatUtil.Style.MULTI_LINE));
 
     // initialize auth and required DBs
     DbManager.initUserDatabase(opts);
@@ -48,8 +68,11 @@ public class Resources extends ContainerResources {
     return DbManager.userDatabase().getDataSource();
   }
 
-  public static String getUserDbSchema() {
-    return "edauser.";
+  public static String getUserDbSchema(String projectId) {
+    if (!SCHEMA_MAP.containsKey(projectId)) {
+      throw new NotFoundException("Invalid project ID: " + projectId);
+    }
+    return SCHEMA_MAP.get(projectId);
   }
 
   public static DBPlatform getUserPlatform() {

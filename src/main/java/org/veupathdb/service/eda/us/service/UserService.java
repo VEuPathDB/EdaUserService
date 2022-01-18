@@ -16,6 +16,7 @@ import org.veupathdb.service.eda.generated.model.SingleAnalysisPatchRequest;
 import org.veupathdb.service.eda.generated.resources.UsersUserId;
 import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
+import org.veupathdb.service.eda.us.model.IdGenerator;
 import org.veupathdb.service.eda.us.model.ProvenancePropsLookup;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
@@ -29,60 +30,93 @@ public class UserService implements UsersUserId {
   private Request _request;
 
   @Override
-  public GetUsersPreferencesByUserIdResponse getUsersPreferencesByUserId(String userId) {
+  public GetUsersPreferencesByUserIdAndProjectIdResponse getUsersPreferencesByUserIdAndProjectId(String userId, String projectId) {
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
-    String prefs = UserDataFactory.readPreferences(user.getUserID());
-    return GetUsersPreferencesByUserIdResponse.respond200WithApplicationJson(prefs);
+    String prefs = dataFactory.readPreferences(user.getUserID());
+    return GetUsersPreferencesByUserIdAndProjectIdResponse.respond200WithApplicationJson(prefs);
   }
 
   @Override
-  public PutUsersPreferencesByUserIdResponse putUsersPreferencesByUserId(String userId, String entity) {
+  public PutUsersPreferencesByUserIdAndProjectIdResponse putUsersPreferencesByUserIdAndProjectId(String userId, String projectId, String entity) {
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
-    UserDataFactory.addUserIfAbsent(user);
-    UserDataFactory.writePreferences(user.getUserID(), entity);
-    return PutUsersPreferencesByUserIdResponse.respond202();
+    dataFactory.addUserIfAbsent(user);
+    dataFactory.writePreferences(user.getUserID(), entity);
+    return PutUsersPreferencesByUserIdAndProjectIdResponse.respond202();
   }
 
   @Override
-  public GetUsersAnalysesByUserIdResponse getUsersAnalysesByUserId(String userId) {
-    List<AnalysisSummary> summaries = UserDataFactory.getAnalysisSummaries(Utils.getAuthorizedUser(_request, userId).getUserID());
-    ProvenancePropsLookup.assignCurrentProvenanceProps(summaries);
-    return GetUsersAnalysesByUserIdResponse.respond200WithApplicationJson(summaries);
+  public GetUsersAnalysesByUserIdAndProjectIdResponse getUsersAnalysesByUserIdAndProjectId(String userId, String projectId) {
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
+    List<AnalysisSummary> summaries = dataFactory.getAnalysisSummaries(Utils.getAuthorizedUser(_request, userId).getUserID());
+    ProvenancePropsLookup.assignCurrentProvenanceProps(dataFactory, summaries);
+    return GetUsersAnalysesByUserIdAndProjectIdResponse.respond200WithApplicationJson(summaries);
   }
 
   @Override
-  public PostUsersAnalysesByUserIdResponse postUsersAnalysesByUserId(String userId, AnalysisListPostRequest entity) {
+  public PostUsersAnalysesByUserIdAndProjectIdResponse postUsersAnalysesByUserIdAndProjectId(String userId, String projectId, AnalysisListPostRequest entity) {
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
-    UserDataFactory.addUserIfAbsent(user);
-    AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(user.getUserID(), entity);
-    UserDataFactory.insertAnalysis(newAnalysis);
-    return PostUsersAnalysesByUserIdResponse.respond200WithApplicationJson(newAnalysis.getIdObject());
+    dataFactory.addUserIfAbsent(user);
+    AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(
+        IdGenerator.getNextAnalysisId(dataFactory), user.getUserID(), entity);
+    dataFactory.insertAnalysis(newAnalysis);
+    return PostUsersAnalysesByUserIdAndProjectIdResponse.respond200WithApplicationJson(newAnalysis.getIdObject());
   }
 
   @Override
-  public GetUsersAnalysesByUserIdAndAnalysisIdResponse getUsersAnalysesByUserIdAndAnalysisId(String userId, String analysisId) {
+  public PatchUsersAnalysesByUserIdAndProjectIdResponse patchUsersAnalysesByUserIdAndProjectId(String userId, String projectId, AnalysisListPatchRequest entity) {
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
-    AnalysisDetailWithUser analysis = UserDataFactory.getAnalysisById(analysisId);
+    performBulkDeletion(dataFactory, user, entity.getAnalysisIdsToDelete());
+    performInheritGuestAnalyses(dataFactory, user, entity.getInheritOwnershipFrom());
+    return PatchUsersAnalysesByUserIdAndProjectIdResponse.respond202();
+  }
+
+  @Override
+  public GetUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse getUsersAnalysesByUserIdAndProjectIdAndAnalysisId(String userId, String projectId, String analysisId) {
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
+    User user = Utils.getAuthorizedUser(_request, userId);
+    AnalysisDetailWithUser analysis = dataFactory.getAnalysisById(analysisId);
     Utils.verifyOwnership(user.getUserID(), analysis);
-    ProvenancePropsLookup.assignCurrentProvenanceProps(List.of(analysis));
-    return GetUsersAnalysesByUserIdAndAnalysisIdResponse.respond200WithApplicationJson(analysis);
+    ProvenancePropsLookup.assignCurrentProvenanceProps(dataFactory, List.of(analysis));
+    return GetUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse.respond200WithApplicationJson(analysis);
   }
 
   @Override
-  public PatchUsersAnalysesByUserIdResponse patchUsersAnalysesByUserId(String userId, AnalysisListPatchRequest entity) {
+  public PatchUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse patchUsersAnalysesByUserIdAndProjectIdAndAnalysisId(String userId, String projectId, String analysisId, SingleAnalysisPatchRequest entity) {
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
-    performBulkDeletion(user, entity.getAnalysisIdsToDelete());
-    performInheritGuestAnalyses(user, entity.getInheritOwnershipFrom());
-    return PatchUsersAnalysesByUserIdResponse.respond202();
+    AnalysisDetailWithUser analysis = dataFactory.getAnalysisById(analysisId);
+    Utils.verifyOwnership(user.getUserID(), analysis);
+    editAnalysis(user, analysis, entity);
+    dataFactory.updateAnalysis(analysis);
+    return PatchUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse.respond202();
   }
 
-  private void performBulkDeletion(User user, List<String> analysisIdsToDelete) {
+  @Override
+  public DeleteUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse deleteUsersAnalysesByUserIdAndProjectIdAndAnalysisId(String userId, String projectId, String analysisId) {
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
+    User user = Utils.getAuthorizedUser(_request, userId);
+    Utils.verifyOwnership(dataFactory, user.getUserID(), analysisId);
+    dataFactory.deleteAnalyses(analysisId);
+    return DeleteUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse.respond202();
+  }
+
+  @Override
+  public PostUsersAnalysesCopyByUserIdAndProjectIdAndAnalysisIdResponse postUsersAnalysesCopyByUserIdAndProjectIdAndAnalysisId(String userId, String projectId, String analysisId) {
+    return PostUsersAnalysesCopyByUserIdAndProjectIdAndAnalysisIdResponse.respond200WithApplicationJson(
+        ImportAnalysisService.importAnalysis(projectId, analysisId, Optional.of(userId), _request));
+  }
+
+  private void performBulkDeletion(UserDataFactory dataFactory, User user, List<String> analysisIdsToDelete) {
     if (analysisIdsToDelete == null || analysisIdsToDelete.isEmpty())
       return;
     try {
       String[] idArray = analysisIdsToDelete.toArray(new String[0]);
-      Utils.verifyOwnership(user.getUserID(), idArray);
-      UserDataFactory.deleteAnalyses(idArray);
+      Utils.verifyOwnership(dataFactory, user.getUserID(), idArray);
+      dataFactory.deleteAnalyses(idArray);
     }
     catch (NotFoundException nfe) {
       // validateOwnership throws not found if ID does not exist; convert to 400
@@ -90,23 +124,13 @@ public class UserService implements UsersUserId {
     }
   }
 
-  private void performInheritGuestAnalyses(User user, Long guestUserId) {
+  private void performInheritGuestAnalyses(UserDataFactory dataFactory, User user, Long guestUserId) {
     if (guestUserId == null)
       return;
     if (user.isGuest())
       throw new BadRequestException("Guest users cannot inherit analyses.");
-    UserDataFactory.addUserIfAbsent(user);
-    UserDataFactory.transferGuestAnalysesOwnership(guestUserId, user.getUserID());
-  }
-
-  @Override
-  public PatchUsersAnalysesByUserIdAndAnalysisIdResponse patchUsersAnalysesByUserIdAndAnalysisId(String userId, String analysisId, SingleAnalysisPatchRequest entity) {
-    User user = Utils.getAuthorizedUser(_request, userId);
-    AnalysisDetailWithUser analysis = UserDataFactory.getAnalysisById(analysisId);
-    Utils.verifyOwnership(user.getUserID(), analysis);
-    editAnalysis(user, analysis, entity);
-    UserDataFactory.updateAnalysis(analysis);
-    return PatchUsersAnalysesByUserIdAndAnalysisIdResponse.respond202();
+    dataFactory.addUserIfAbsent(user);
+    dataFactory.transferGuestAnalysesOwnership(guestUserId, user.getUserID());
   }
 
   private static void editAnalysis(User user, AnalysisDetail analysis, SingleAnalysisPatchRequest entity) {
@@ -136,17 +160,4 @@ public class UserService implements UsersUserId {
     }
   }
 
-  @Override
-  public DeleteUsersAnalysesByUserIdAndAnalysisIdResponse deleteUsersAnalysesByUserIdAndAnalysisId(String userId, String analysisId) {
-    User user = Utils.getAuthorizedUser(_request, userId);
-    Utils.verifyOwnership(user.getUserID(), analysisId);
-    UserDataFactory.deleteAnalyses(analysisId);
-    return DeleteUsersAnalysesByUserIdAndAnalysisIdResponse.respond202();
-  }
-
-  @Override
-  public PostUsersAnalysesCopyByUserIdAndAnalysisIdResponse postUsersAnalysesCopyByUserIdAndAnalysisId(String userIdStr, String analysisId) {
-    return PostUsersAnalysesCopyByUserIdAndAnalysisIdResponse.respond200WithApplicationJson(
-        ImportAnalysisService.importAnalysis(analysisId, Optional.of(userIdStr), _request));
-  }
 }

@@ -19,7 +19,7 @@ public class ProvenancePropsLookup {
     return currentState;
   }
 
-  public static void assignCurrentProvenanceProps(List<? extends AnalysisSummary> summaries) {
+  public static void assignCurrentProvenanceProps(UserDataFactory dataFactory, List<? extends AnalysisSummary> summaries) {
     Map<String, CurrentProvenanceProps> idToCurrentPropsCache = new HashMap<>();
     // add all mod dates in the current list to save lookups already done
     summaries.stream().forEach(a ->
@@ -34,7 +34,7 @@ public class ProvenancePropsLookup {
           // still need to look up
           try {
             // try to find parent analysis (may have been deleted)
-            AnalysisDetailWithUser parentAnalysis = UserDataFactory.getAnalysisById(parentId);
+            AnalysisDetailWithUser parentAnalysis = dataFactory.getAnalysisById(parentId);
             currentProps = toCurrentProps(
                 parentAnalysis.getModificationTime(),
                 parentAnalysis.getIsPublic()

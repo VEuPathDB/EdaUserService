@@ -17,12 +17,12 @@ public class IdGenerator {
     return new String(chars);
   }
 
-  public static String getNextAnalysisId() {
+  public static String getNextAnalysisId(UserDataFactory dataFactory) {
     while (true) {
       String newId = generateRandomId();
       try {
         // see if an existing analysis has this ID
-        UserDataFactory.getAnalysisById(newId);
+        dataFactory.getAnalysisById(newId);
       }
       catch (NotFoundException e) {
         // couldn't find one; return this ID

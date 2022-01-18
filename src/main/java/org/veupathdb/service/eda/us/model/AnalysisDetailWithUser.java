@@ -32,16 +32,16 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
     UserDataFactory.populateDetailFields(this, rs);
   }
 
-  public AnalysisDetailWithUser(long ownerId, AnalysisListPostRequest request) {
-    setInitializationFields(ownerId);
+  public AnalysisDetailWithUser(String newAnalysisId, long ownerId, AnalysisListPostRequest request) {
+    setInitializationFields(newAnalysisId, ownerId);
     setBaseFields(request);
     setDescriptor(request.getDescriptor());
     setNotes(request.getNotes());
     setIsPublic(request.getIsPublic());
   }
 
-  public AnalysisDetailWithUser(long ownerId, AnalysisDetailWithUser source, AccountDataPair provenanceOwner) {
-    setInitializationFields(ownerId);
+  public AnalysisDetailWithUser(String newAnalysisId, long ownerId, AnalysisDetailWithUser source, AccountDataPair provenanceOwner) {
+    setInitializationFields(newAnalysisId, ownerId);
     setBaseFields(source);
     setDescriptor(source.getDescriptor());
     setNotes(source.getNotes());
@@ -64,12 +64,12 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
     return provenance;
   }
 
-  private void setInitializationFields(long ownerId) {
+  private void setInitializationFields(String newAnalysisId, long ownerId) {
     String now = Utils.getCurrentDateTimeString();
     setUserId(ownerId);
     setCreationTime(now);
     setModificationTime(now);
-    setAnalysisId(IdGenerator.getNextAnalysisId());
+    setAnalysisId(newAnalysisId);
   }
 
   private void setBaseFields(AnalysisBase base) {

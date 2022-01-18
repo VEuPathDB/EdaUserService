@@ -101,8 +101,14 @@ public class UserDataFactory {
       Types.CLOB // notes
   };
 
-  private static String addSchema(String sqlConstant) {
-    return sqlConstant.replace(SCHEMA_MACRO, Resources.getUserDbSchema());
+  private final String _userSchema;
+
+  public UserDataFactory(String projectId) {
+    _userSchema = Resources.getUserDbSchema(projectId);
+  }
+
+  private String addSchema(String sqlConstant) {
+    return sqlConstant.replace(SCHEMA_MACRO, _userSchema);
   }
 
   /***************************************************************************************
@@ -114,7 +120,7 @@ public class UserDataFactory {
       " select %d as user_id, %d as is_guest, '{}' as preferences from dual" +
       " where not exists (select user_id from " + TABLE_USERS + " where user_id = %d)";
 
-  public static void addUserIfAbsent(User user) {
+  public void addUserIfAbsent(User user) {
     // need to use format vs prepared statement for first two macros since they are in a select
     String sql = String.format(
         addSchema(INSERT_USER_SQL),
@@ -135,7 +141,7 @@ public class UserDataFactory {
       " from " + TABLE_USERS +
       " where user_id = ?";
 
-  public static String readPreferences(long userId) {
+  public String readPreferences(long userId) {
     return new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(READ_PREFS_SQL),
@@ -158,7 +164,7 @@ public class UserDataFactory {
       " set preferences = ?" +
       " where user_id = ?";
 
-  public static void writePreferences(long userId, String prefsObject) {
+  public void writePreferences(long userId, String prefsObject) {
     new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(WRITE_PREFS_SQL),
@@ -179,7 +185,7 @@ public class UserDataFactory {
       " where " + COL_USER_ID + " = ?" +
       " order by " + COL_MODIFICATION_TIME + " desc";
 
-  public static List<AnalysisSummary> getAnalysisSummaries(long userId) {
+  public List<AnalysisSummary> getAnalysisSummaries(long userId) {
     return new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(GET_ANALYSES_BY_USER_SQL),
@@ -208,7 +214,7 @@ public class UserDataFactory {
       " from " + TABLE_ANALYSIS +
       " where " + COL_ANALYSIS_ID + " = ?";
 
-  public static AnalysisDetailWithUser getAnalysisById(String analysisId) {
+  public AnalysisDetailWithUser getAnalysisById(String analysisId) {
     try {
       return new SQLRunner(
           Resources.getUserDataSource(),
@@ -246,7 +252,7 @@ public class UserDataFactory {
         Arrays.stream(DETAIL_COLS).map(c -> "?").collect(Collectors.joining(", ")) +
       " ) ";
 
-  public static void insertAnalysis(AnalysisDetailWithUser analysis) {
+  public void insertAnalysis(AnalysisDetailWithUser analysis) {
     new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(INSERT_ANALYSIS_SQL),
@@ -266,7 +272,7 @@ public class UserDataFactory {
       Arrays.stream(DETAIL_COLS).map(c -> c + " = ?").collect(Collectors.joining(", ")) +
       " where " + COL_ANALYSIS_ID + " = ?";
 
-  public static void updateAnalysis(AnalysisDetailWithUser analysis) {
+  public void updateAnalysis(AnalysisDetailWithUser analysis) {
     int rowsUpdated = new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(UPDATE_ANALYSIS_SQL),
@@ -296,7 +302,7 @@ public class UserDataFactory {
       "delete from " + TABLE_ANALYSIS +
       " where " + COL_ANALYSIS_ID + " IN  ( " + IDS_MACRO_LIST_MACRO + " )";
 
-  public static void deleteAnalyses(String... idsToDelete) {
+  public void deleteAnalyses(String... idsToDelete) {
 
     // check for valid number of IDs
     if (idsToDelete.length == 0) return;
@@ -326,7 +332,7 @@ public class UserDataFactory {
       " where " + COL_IS_PUBLIC + " = " + Resources.getUserPlatform().convertBoolean(true) +
       " order by " + COL_MODIFICATION_TIME + " desc";
 
-  public static List<AnalysisSummaryWithUser> getPublicAnalyses() {
+  public List<AnalysisSummaryWithUser> getPublicAnalyses() {
     return new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(GET_PUBLIC_ANALYSES_SQL),
@@ -360,7 +366,7 @@ public class UserDataFactory {
       "   and u.user_id = ?" +
       " )";
 
-  public static void transferGuestAnalysesOwnership(long fromGuestUserId, long toRegisteredUserId) {
+  public void transferGuestAnalysesOwnership(long fromGuestUserId, long toRegisteredUserId) {
     new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(TRANSFER_GUEST_ANALYSES_SQL),

@@ -10,35 +10,39 @@ import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostResponse;
 import org.veupathdb.service.eda.generated.model.SingleAnalysisPublicInfo;
 import org.veupathdb.service.eda.generated.model.SingleAnalysisPublicInfoImpl;
-import org.veupathdb.service.eda.generated.resources.ImportAnalysis;
+import org.veupathdb.service.eda.generated.resources.ImportAnalysisProjectId;
 import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.AccountDbData;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
+import org.veupathdb.service.eda.us.model.IdGenerator;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
 @Authenticated(allowGuests = true)
-public class ImportAnalysisService implements ImportAnalysis {
+public class ImportAnalysisService implements ImportAnalysisProjectId {
 
   @Context
   private Request _request;
 
   @Override
-  public GetImportAnalysisByAnalysisIdResponse getImportAnalysisByAnalysisId(String analysisId) {
-    return GetImportAnalysisByAnalysisIdResponse.respond200WithApplicationJson(importAnalysis(analysisId, Optional.empty(), _request));
+  public GetImportAnalysisByProjectIdAndAnalysisIdResponse getImportAnalysisByProjectIdAndAnalysisId(String projectId, String analysisId) {
+    return GetImportAnalysisByProjectIdAndAnalysisIdResponse.respond200WithApplicationJson(importAnalysis(projectId, analysisId, Optional.empty(), _request));
   }
 
   @Override
-  public GetImportAnalysisInfoByAnalysisIdResponse getImportAnalysisInfoByAnalysisId(String analysisId) {
-    AnalysisDetailWithUser analysis = UserDataFactory.getAnalysisById(analysisId);
+  public GetImportAnalysisInfoByProjectIdAndAnalysisIdResponse getImportAnalysisInfoByProjectIdAndAnalysisId(String projectId, String analysisId) {
+    AnalysisDetailWithUser analysis = new UserDataFactory(projectId).getAnalysisById(analysisId);
     SingleAnalysisPublicInfo info = new SingleAnalysisPublicInfoImpl();
     info.setStudyId(analysis.getStudyId());
-    return GetImportAnalysisInfoByAnalysisIdResponse.respond200WithApplicationJson(info);
+    return GetImportAnalysisInfoByProjectIdAndAnalysisIdResponse.respond200WithApplicationJson(info);
   }
 
-  public static AnalysisListPostResponse importAnalysis(String analysisId, Optional<String> userIdOpt, Request request) {
+  public static AnalysisListPostResponse importAnalysis(String projectId, String analysisId, Optional<String> userIdOpt, Request request) {
+
+    // create data factory (validates projectId)
+    UserDataFactory dataFactory = new UserDataFactory(projectId);
 
     // look up analysis by ID
-    AnalysisDetailWithUser oldAnalysis = UserDataFactory.getAnalysisById(analysisId);
+    AnalysisDetailWithUser oldAnalysis = dataFactory.getAnalysisById(analysisId);
 
     // if provided, verify URL's userId and analysisId match
     long userId = userIdOpt.map(userIdStr -> {
@@ -49,11 +53,12 @@ public class ImportAnalysisService implements ImportAnalysis {
 
     // make a copy of the analysis, assign a new owner, check display name (must be unique) and insert
     User newOwner = Utils.getActiveUser(request);
-    UserDataFactory.addUserIfAbsent(newOwner);
+    dataFactory.addUserIfAbsent(newOwner);
     AccountDbData.AccountDataPair provenanceOwner = new AccountDbData().getUserDataById(userId);
-    AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(newOwner.getUserID(), oldAnalysis, provenanceOwner);
+    AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(
+        IdGenerator.getNextAnalysisId(dataFactory), newOwner.getUserID(), oldAnalysis, provenanceOwner);
 
-    UserDataFactory.insertAnalysis(newAnalysis);
+    dataFactory.insertAnalysis(newAnalysis);
     return newAnalysis.getIdObject();
 
   }
