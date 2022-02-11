@@ -7,134 +7,6 @@
 ################################################################################
 
 types:
-  AnalysisBase:
-    type: object
-    additionalProperties: false
-    properties:
-      displayName: string
-      description: string
-      studyId: string
-      studyVersion: string
-      apiVersion: string
-      isPublic: boolean
-  OnImportProvenanceProps:
-    type: object
-    additionalProperties: false
-    properties:
-      ownerId: integer
-      ownerName: string
-      ownerOrganization: string
-      analysisId: string
-      analysisName: string
-      creationTime: string
-      modificationTime: string
-      isPublic: boolean
-  CurrentProvenanceProps:
-    type: object
-    additionalProperties: false
-    properties:
-      isDeleted: boolean
-      modificationTime?: string
-      isPublic?: boolean
-  AnalysisProvenance:
-    type: object
-    additionalProperties: false
-    properties:
-      onImport: OnImportProvenanceProps
-      current: CurrentProvenanceProps
-  AnalysisSummary:
-    type: AnalysisBase
-    additionalProperties: false
-    properties:
-      analysisId: string
-      creationTime: string
-      modificationTime: string
-      numFilters: integer
-      numComputations: integer
-      numVisualizations: integer
-      provenance?: AnalysisProvenance
-  AnalysisSummaryWithUser:
-    type: AnalysisSummary
-    additionalProperties: false
-    properties:
-      userId: number
-      userName: string
-      userOrganization: string
-  AnalysisListPostRequest:
-    type: AnalysisBase
-    additionalProperties: false
-    properties:
-      notes?: string
-      descriptor: AnalysisDescriptor
-  AnalysisListPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      analysisId: string
-  AnalysisListPatchRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      analysisIdsToDelete?: string[]
-      inheritOwnershipFrom?: integer
-  AnalysisDetail:
-    type: AnalysisSummary
-    additionalProperties: false
-    properties:
-      notes?: string
-      descriptor: AnalysisDescriptor
-  SingleAnalysisPatchRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      displayName?: string
-      description?: string
-      notes?: string
-      descriptor?: AnalysisDescriptor
-      isPublic?: boolean
-  DataTableConfig:
-    type: object
-    additionalProperties: false
-    properties:
-      variables: VariableSpec[]
-      sorting: SortSpecEntry[]
-  DataTableConfigSet:
-    type: object
-    properties:
-      //: DataTableConfig
-  AnalysisDescriptor:
-    type: object
-    additionalProperties: false
-    properties:
-      subset:
-        type: object
-        properties:
-          descriptor: object[]
-          uiSettings?: object
-      computations: Computation[]
-      starredVariables: VariableSpec[]
-      dataTableConfig: DataTableConfigSet
-      derivedVariables: DerivedVariable[]
-  Computation:
-    type: object
-    additionalProperties: false
-    properties:
-      computationId: string
-      displayName: string
-      descriptor: object
-      visualizations: Visualization[]
-  Visualization:
-    type: object
-    additionalProperties: false
-    properties:
-      visualizationId: string
-      displayName: string
-      descriptor: object
-  SingleAnalysisPublicInfo:
-    type: object
-    additionalProperties: false
-    properties:
-      studyId: string
   VariableSpec:
     type: object
     additionalProperties: false
@@ -459,4 +331,132 @@ types:
       variableId: string
       left: number
       right: number
+  AnalysisBase:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName: string
+      description: string
+      studyId: string
+      studyVersion: string
+      apiVersion: string
+      isPublic: boolean
+  OnImportProvenanceProps:
+    type: object
+    additionalProperties: false
+    properties:
+      ownerId: integer
+      ownerName: string
+      ownerOrganization: string
+      analysisId: string
+      analysisName: string
+      creationTime: string
+      modificationTime: string
+      isPublic: boolean
+  CurrentProvenanceProps:
+    type: object
+    additionalProperties: false
+    properties:
+      isDeleted: boolean
+      modificationTime?: string
+      isPublic?: boolean
+  AnalysisProvenance:
+    type: object
+    additionalProperties: false
+    properties:
+      onImport: OnImportProvenanceProps
+      current: CurrentProvenanceProps
+  AnalysisSummary:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      analysisId: string
+      creationTime: string
+      modificationTime: string
+      numFilters: integer
+      numComputations: integer
+      numVisualizations: integer
+      provenance?: AnalysisProvenance
+  AnalysisSummaryWithUser:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      userId: number
+      userName: string
+      userOrganization: string
+  AnalysisListPostRequest:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      notes?: string
+      descriptor: AnalysisDescriptor
+  AnalysisListPostResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisId: string
+  AnalysisListPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisIdsToDelete?: string[]
+      inheritOwnershipFrom?: integer
+  AnalysisDetail:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      notes?: string
+      descriptor: AnalysisDescriptor
+  SingleAnalysisPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName?: string
+      description?: string
+      notes?: string
+      descriptor?: AnalysisDescriptor
+      isPublic?: boolean
+  DataTableConfig:
+    type: object
+    additionalProperties: false
+    properties:
+      variables: VariableSpec[]
+      sorting: SortSpecEntry[]
+  DataTableConfigSet:
+    type: object
+    properties:
+      //: DataTableConfig
+  AnalysisDescriptor:
+    type: object
+    additionalProperties: false
+    properties:
+      subset:
+        type: object
+        properties:
+          descriptor: object[]
+          uiSettings?: object
+      computations: Computation[]
+      starredVariables: VariableSpec[]
+      dataTableConfig: DataTableConfigSet
+      derivedVariables: DerivedVariable[]
+  Computation:
+    type: object
+    additionalProperties: false
+    properties:
+      computationId: string
+      displayName: string
+      descriptor: object
+      visualizations: Visualization[]
+  Visualization:
+    type: object
+    additionalProperties: false
+    properties:
+      visualizationId: string
+      displayName: string
+      descriptor: object
+  SingleAnalysisPublicInfo:
+    type: object
+    additionalProperties: false
+    properties:
+      studyId: string
 
