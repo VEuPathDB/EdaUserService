@@ -11,23 +11,24 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Request;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.gusdb.fgputil.FormatUtil;
 import org.gusdb.fgputil.json.JsonUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.providers.UserProvider;
+import org.veupathdb.service.eda.generated.model.AnalysisSummary;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
 public class Utils {
 
-  public static User getActiveUser(Request request) {
+  public static User getActiveUser(ContainerRequest request) {
     return UserProvider.lookupUser(request).orElseThrow(() ->
         // authentication framework should handle cases where no appropriate user header was sent
         new InternalServerErrorException("Request reached authenticated endpoint with no user attached"));
   }
 
-  public static User getAuthorizedUser(Request request, String resourceUserId) {
+  public static User getAuthorizedUser(ContainerRequest request, String resourceUserId) {
     User activeUser = getActiveUser(request);
     if (!String.valueOf(activeUser.getUserID()).equals(resourceUserId)) {
       throw new ForbiddenException();

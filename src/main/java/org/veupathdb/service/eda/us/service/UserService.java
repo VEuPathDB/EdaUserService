@@ -5,7 +5,7 @@ import java.util.Optional;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Request;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
 import org.veupathdb.service.eda.generated.model.AnalysisDetail;
@@ -27,7 +27,7 @@ import static org.veupathdb.service.eda.us.Utils.checkNonEmpty;
 public class UserService implements UsersUserId {
 
   @Context
-  private Request _request;
+  private ContainerRequest _request;
 
   @Override
   public GetUsersPreferencesByUserIdAndProjectIdResponse getUsersPreferencesByUserIdAndProjectId(String userId, String projectId) {

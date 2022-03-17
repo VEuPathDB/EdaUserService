@@ -3,7 +3,7 @@ package org.veupathdb.service.eda.us.service;
 import java.util.Optional;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Request;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.gusdb.fgputil.FormatUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
@@ -21,7 +21,7 @@ import org.veupathdb.service.eda.us.model.UserDataFactory;
 public class ImportAnalysisService implements ImportAnalysisProjectId {
 
   @Context
-  private Request _request;
+  private ContainerRequest _request;
 
   @Override
   public GetImportAnalysisByProjectIdAndAnalysisIdResponse getImportAnalysisByProjectIdAndAnalysisId(String projectId, String analysisId) {
@@ -36,7 +36,7 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
     return GetImportAnalysisInfoByProjectIdAndAnalysisIdResponse.respond200WithApplicationJson(info);
   }
 
-  public static AnalysisListPostResponse importAnalysis(String projectId, String analysisId, Optional<String> userIdOpt, Request request) {
+  public static AnalysisListPostResponse importAnalysis(String projectId, String analysisId, Optional<String> userIdOpt, ContainerRequest request) {
 
     // create data factory (validates projectId)
     UserDataFactory dataFactory = new UserDataFactory(projectId);
