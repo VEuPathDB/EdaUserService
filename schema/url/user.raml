@@ -19,7 +19,6 @@ types:
       ownerId:
         format: int64
         type: number
-        required: true
       ownerName: string
       ownerOrganization: string
       analysisId: string
@@ -51,15 +50,12 @@ types:
       numFilters:
         format: int64
         type: number
-        required: true
       numComputations:
         format: int64
         type: number
-        required: true
       numVisualizations:
         format: int64
         type: number
-        required: true
       provenance?: AnalysisProvenance
 
   # supports public analyses endpoint
@@ -87,10 +83,9 @@ types:
     additionalProperties: false
     properties:
       analysisIdsToDelete?: string[]
-      inheritOwnershipFrom:
+      inheritOwnershipFrom?:
         format: int64
         type: number
-        required: false
 
   AnalysisDetail:
     additionalProperties: false
