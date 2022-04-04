@@ -378,7 +378,7 @@ types:
     additionalProperties: false
     properties:
       ownerId:
-        type: number
+        type: integer
         format: int64
       ownerName: string
       ownerOrganization: string
@@ -441,7 +441,7 @@ types:
     properties:
       analysisIdsToDelete?: string[]
       inheritOwnershipFrom?:
-        type: number
+        type: integer
         format: int64
   AnalysisDetail:
     type: AnalysisSummary
