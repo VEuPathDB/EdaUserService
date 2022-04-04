@@ -3,7 +3,7 @@ package org.veupathdb.service.eda.us.model;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
 import org.veupathdb.service.eda.generated.model.AnalysisSummary;
 import org.veupathdb.service.eda.generated.model.CurrentProvenanceProps;

@@ -1,7 +1,7 @@
 package org.veupathdb.service.eda.us;
 
 import java.util.Map;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.FormatUtil;

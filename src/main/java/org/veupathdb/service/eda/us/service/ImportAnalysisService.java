@@ -1,8 +1,8 @@
 package org.veupathdb.service.eda.us.service;
 
 import java.util.Optional;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Context;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Context;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.gusdb.fgputil.FormatUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
