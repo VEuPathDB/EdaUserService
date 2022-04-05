@@ -16,7 +16,9 @@ types:
   OnImportProvenanceProps:
     additionalProperties: false
     properties:
-      ownerId: integer
+      ownerId:
+        format: int64
+        type: integer
       ownerName: string
       ownerOrganization: string
       analysisId: string
@@ -45,9 +47,15 @@ types:
       analysisId: string
       creationTime: string
       modificationTime: string
-      numFilters: integer
-      numComputations: integer
-      numVisualizations: integer
+      numFilters:
+        format: int64
+        type: integer
+      numComputations:
+        format: int64
+        type: integer
+      numVisualizations:
+        format: int64
+        type: integer
       provenance?: AnalysisProvenance
 
   # supports public analyses endpoint
@@ -75,7 +83,9 @@ types:
     additionalProperties: false
     properties:
       analysisIdsToDelete?: string[]
-      inheritOwnershipFrom?: integer
+      inheritOwnershipFrom?:
+        format: int64
+        type: integer
 
   AnalysisDetail:
     additionalProperties: false
