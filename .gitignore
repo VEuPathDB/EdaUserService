@@ -9,6 +9,7 @@
 generated/
 .classpath
 .project
+.bin
 
 *.tmp
 *.bak
