@@ -153,7 +153,7 @@ dependencies {
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junit}")
 
   // Stub database (temporary?)
-  implementation("org.hsqldb:hsqldb:2.5.1")
+  implementation("org.hsqldb:hsqldb:2.6.1")
 }
 
 val test by tasks.getting(Test::class) {
