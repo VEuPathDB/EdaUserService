@@ -1,3 +1,5 @@
+= EDA User Service
+
 An EDA service that provides
 
 * read and write access to a database of EDA user activity
