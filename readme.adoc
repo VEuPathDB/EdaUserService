@@ -2,7 +2,9 @@
 
 An EDA service that provides
 
-* read and write access to a database of EDA user activity
+* Provides storage for a user's analysis specs and preferences
+* Does _not_ check user permissions to access individual studies
+* Does _not_ validate incoming analysis specs (JSON)
 
 See the https://veupathdb.github.io/EdaUserService/api.html[API Docs] for details.
 
