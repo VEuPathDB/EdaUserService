@@ -90,9 +90,9 @@ repositories {
 //
 
 // versions
-val coreLib       = "6.8.0"         // Container core lib version
-val edaCommon     = "9.1.0"         // EDA Common version
-val fgputil       = "2.7.1-jakarta" // FgpUtil version
+val coreLib       = "6.12.1"         // Container core lib version
+val edaCommon     = "9.1.0"          // EDA Common version
+val fgputil       = "2.7.1-jakarta"  // FgpUtil version
 
 val jersey        = "3.0.4"       // Jersey/JaxRS version
 val jackson       = "2.13.3"      // FasterXML Jackson version
@@ -129,9 +129,9 @@ val fetchEdaCommonRamlTask = tasks.register("fetch-eda-common-schema") {
 mergeRamlTask.get().dependsOn(fetchEdaCommonRamlTask)
 
 val cleanEdaCommonSchemaTask = tasks.register("clean-eda-common-schema") {
-  doLast{
-    logger.lifecycle("Running task: clean-eda-common-schema")
-    File(commonRamlOutFileName).delete();
+  doLast {
+    logger.lifecycle("Deleting file $commonRamlOutFileName")
+    File(commonRamlOutFileName).delete()
   }
 }
 mergeRamlTask.get().finalizedBy(cleanEdaCommonSchemaTask)
