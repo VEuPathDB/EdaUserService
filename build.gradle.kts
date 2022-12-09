@@ -1,8 +1,10 @@
 import org.veupathdb.lib.gradle.container.util.Logger.Level
+import java.io.FileOutputStream
+import java.net.URL
 
 plugins {
   java
-  id("org.veupathdb.lib.gradle.container.container-utils") version "4.0.0"
+  id("org.veupathdb.lib.gradle.container.container-utils") version "4.6.0"
   id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
@@ -102,14 +104,37 @@ val metrics       = "0.15.0"      // Prometheus lib version
 // use local EdaCommon compiled schema if project exists, else use released version;
 //    this mirrors the way we use local EdaCommon code if available
 val edaCommonLocalProjectDir = findProject(":edaCommon")?.projectDir
-val edaCommonSchemaFetch =
-  if (edaCommonLocalProjectDir != null)
-    "cat ${edaCommonLocalProjectDir}/schema/library.raml"
-  else
-    "curl https://raw.githubusercontent.com/VEuPathDB/EdaCommon/v${edaCommon}/schema/library.raml"
 
-// register a task that prints the command to fetch EdaCommon schema; used to pull down raml lib
-tasks.register("print-eda-common-schema-fetch") { print(edaCommonSchemaFetch) }
+val commonRamlOutFileName = "$projectDir/schema/eda-common-lib.raml"
+
+val mergeRamlTask = tasks.named("merge-raml");
+
+val fetchEdaCommonRamlTask = tasks.register("fetch-eda-common-schema") {
+  doLast {
+    val commonRamlOutFile = File(commonRamlOutFileName)
+    commonRamlOutFile.delete()
+
+    if (edaCommonLocalProjectDir != null) {
+      val commonRamlFile = File("${edaCommonLocalProjectDir}/schema/library.raml")
+      logger.lifecycle("Copying file from ${commonRamlFile.path} to ${commonRamlOutFile.path}")
+      commonRamlFile.copyTo(commonRamlOutFile);
+    } else {
+      commonRamlOutFile.createNewFile();
+      val edaCommonRamlUrl = "https://raw.githubusercontent.com/VEuPathDB/EdaCommon/v${edaCommon}/schema/library.raml"
+      logger.lifecycle("Downloading file contents from $edaCommonRamlUrl")
+      URL(edaCommonRamlUrl).openStream().use { it.transferTo(FileOutputStream(commonRamlOutFile)) }
+    }
+  }
+}
+mergeRamlTask.get().dependsOn(fetchEdaCommonRamlTask)
+
+val cleanEdaCommonSchemaTask = tasks.register("clean-eda-common-schema") {
+  doLast{
+    logger.lifecycle("Running task: clean-eda-common-schema")
+    File(commonRamlOutFileName).delete();
+  }
+}
+mergeRamlTask.get().finalizedBy(cleanEdaCommonSchemaTask)
 
 // ensures changing modules are never cached
 configurations.all {
