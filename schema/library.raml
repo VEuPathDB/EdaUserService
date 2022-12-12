@@ -51,15 +51,9 @@ types:
       analysisId: string
       creationTime: string
       modificationTime: string
-      numFilters:
-        format: int64
-        type: integer
-      numComputations:
-        format: int64
-        type: integer
-      numVisualizations:
-        format: int64
-        type: integer
+      numFilters: integer
+      numComputations: integer
+      numVisualizations: integer
       provenance?: AnalysisProvenance
   AnalysisSummaryWithUser:
     type: AnalysisSummary
@@ -145,6 +139,28 @@ types:
     additionalProperties: false
     properties:
       studyId: string
+  UserAnalysisMetricsResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      startDate: date-only
+      endDate: date-only
+      creationCounts: UserAnalysisCounts
+      modifiedCounts: UserAnalysisCounts
+  UserAnalysisCounts:
+    type: object
+    additionalProperties: false
+    properties:
+      totalCount: integer
+      totalSharesCount: integer
+      countPerStudy: StudyCount[]
+      sharesPerStudy: StudyCount[]
+  StudyCount:
+    type: object
+    additionalProperties: false
+    properties:
+      studyName: string
+      count: integer
   VisualizationDataElementConstraint:
     type: object
     additionalProperties: false

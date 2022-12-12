@@ -55,6 +55,22 @@ securitySchemes:
               application/json:
                 type: lib.SingleAnalysisPublicInfo
 
+/metrics/user/analyses:
+  displayName: Get usage metrics for EDA users by time period
+  get:
+    queryParameters: 
+      startDate:
+        description: optional start date (yyyy-mm-dd)
+        type: date-only
+      endDate:
+        description: optional end date (yyyy-mm-dd)
+        type: date-only    
+    responses:
+      200:
+        body:
+          application/json:
+            type: lib.UserAnalysisMetricsResponse
+      
 /users/{user-id}:
 
   /preferences/{project-id}:

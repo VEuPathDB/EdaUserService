@@ -3,10 +3,8 @@ package org.veupathdb.service.eda.us.model;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.util.*;
 import java.util.stream.Collectors;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
@@ -16,14 +14,7 @@ import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.veupathdb.lib.container.jaxrs.model.User;
-import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
-import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
-import org.veupathdb.service.eda.generated.model.AnalysisProvenanceImpl;
-import org.veupathdb.service.eda.generated.model.AnalysisSummary;
-import org.veupathdb.service.eda.generated.model.AnalysisSummaryImpl;
-import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUser;
-import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUserImpl;
-import org.veupathdb.service.eda.generated.model.OnImportProvenanceProps;
+import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
 import org.veupathdb.service.eda.us.Utils;
 
@@ -377,6 +368,53 @@ public class UserDataFactory {
   }
 
   /***************************************************************************************
+   *** Read analysis metrics
+   **************************************************************************************/
+
+  public UserAnalysisMetricsResponse readAnalysisMetrics(Date startDate, Date endDate) {
+    UserAnalysisMetricsResponseImpl response = new UserAnalysisMetricsResponseImpl();
+    response.setStartDate(startDate);
+    response.setStartDate(endDate);
+    response.setCreationCounts(readAnalysisCounts(startDate, endDate, "creation_date"));
+    response.setModifiedCounts(readAnalysisCounts(startDate, endDate, "last_modified_date"));
+    return response;
+  }
+
+  public UserAnalysisCounts readAnalysisCounts(Date startDate, Date endDate, String dateColumn) {
+    String sql1 = """
+select count(analysis_id) as cnt, study_id
+from %s.analysis
+where %s > ? and %s <= ?
+group by study_id
+order by cnt desc
+        """;
+    String sql2 = String.format(sql1, _userSchema, dateColumn, dateColumn);
+
+    java.sql.Date sqlStartDate = java.sql.Date.valueOf(LocalDate.of(1990, 1, 1)); // epoch start
+    if (startDate != null) sqlStartDate = new java.sql.Date(startDate.getTime());
+    java.sql.Date sqlEndDate = java.sql.Date.valueOf(LocalDate.of(2090, 1, 1)); // epoch end
+    if (endDate != null) sqlEndDate = new java.sql.Date(endDate.getTime());
+
+    return new SQLRunner(
+            Resources.getUserDataSource(),
+            sql2,
+            "read-analysis-counts"
+    ).executeQuery(
+            new Object[]{ sqlStartDate, sqlEndDate },
+            new Integer[]{ Types.DATE, Types.DATE },
+            rs -> {
+              UserAnalysisCounts counts = new UserAnalysisCountsImpl();
+              counts.setTotalCount(null);
+              counts.setTotalSharesCount(null);
+              counts.setCountPerStudy(null);
+              counts.setSharesPerStudy(null);
+              return counts;
+            }
+    );
+  }
+
+
+  /***************************************************************************************
    *** Analysis object population methods
    **************************************************************************************/
 
@@ -390,9 +428,9 @@ public class UserDataFactory {
     analysis.setCreationTime(Utils.formatTimestamp(rs.getTimestamp(COL_CREATION_TIME))); // timestamp not null,
     analysis.setModificationTime(Utils.formatTimestamp(rs.getTimestamp(COL_MODIFICATION_TIME))); // timestamp not null,
     analysis.setIsPublic(Resources.getUserPlatform().getBooleanValue(rs, COL_IS_PUBLIC, false)); // integer not null,
-    analysis.setNumFilters(rs.getLong(COL_NUM_FILTERS)); // integer not null,
-    analysis.setNumComputations(rs.getLong(COL_NUM_COMPUTATIONS)); // integer not null,
-    analysis.setNumVisualizations(rs.getLong(COL_NUM_VISUALIZATIONS)); // integer not null,
+    analysis.setNumFilters(rs.getInt(COL_NUM_FILTERS)); // integer not null,
+    analysis.setNumComputations(rs.getInt(COL_NUM_COMPUTATIONS)); // integer not null,
+    analysis.setNumVisualizations(rs.getInt(COL_NUM_VISUALIZATIONS)); // integer not null,
     analysis.setProvenance(createProvenance(Resources.getUserPlatform().getClobData(rs, COL_PROVENANCE))); // clob
   }
 
