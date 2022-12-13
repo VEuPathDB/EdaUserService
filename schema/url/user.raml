@@ -151,13 +151,13 @@ types:
   UserAnalysisCounts:
     additionalProperties: false
     properties:
-      totalCount: integer
-      totalSharesCount: integer
-      countPerStudy: StudyCount[]
-      sharesPerStudy: StudyCount[]
+      totalAnalysesCount: integer
+      totalImportedAnalysesCount: integer
+      analysesCountPerStudy: StudyCount[]
+      importedAnalysesPerStudy: StudyCount[]
 
   StudyCount:
     additionalProperties: false
     properties:
-      studyName: string
+      studyId: string
       count: integer

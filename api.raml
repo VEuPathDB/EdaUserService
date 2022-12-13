@@ -55,7 +55,7 @@ securitySchemes:
               application/json:
                 type: lib.SingleAnalysisPublicInfo
 
-/metrics/user/analyses:
+/metrics/user/{project-id}analyses:
   displayName: Get usage metrics for EDA users by time period
   get:
     queryParameters: 

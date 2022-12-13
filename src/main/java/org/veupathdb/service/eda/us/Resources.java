@@ -13,6 +13,7 @@ import org.veupathdb.lib.container.jaxrs.config.Options;
 import org.veupathdb.lib.container.jaxrs.server.ContainerResources;
 import org.veupathdb.lib.container.jaxrs.utils.db.DbManager;
 import org.veupathdb.service.eda.us.service.ImportAnalysisService;
+import org.veupathdb.service.eda.us.service.MetricsService;
 import org.veupathdb.service.eda.us.service.PublicDataService;
 import org.veupathdb.service.eda.us.service.UserService;
 
@@ -89,7 +90,8 @@ public class Resources extends ContainerResources {
     return new Object[] {
       UserService.class,
       PublicDataService.class,
-      ImportAnalysisService.class
+      ImportAnalysisService.class,
+      MetricsService.class
     };
   }
 }

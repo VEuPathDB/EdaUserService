@@ -375,20 +375,41 @@ public class UserDataFactory {
     UserAnalysisMetricsResponseImpl response = new UserAnalysisMetricsResponseImpl();
     response.setStartDate(startDate);
     response.setStartDate(endDate);
-    response.setCreationCounts(readAnalysisCounts(startDate, endDate, "creation_date"));
-    response.setModifiedCounts(readAnalysisCounts(startDate, endDate, "last_modified_date"));
+    response.setCreationCounts(getAnalysisCountsPerDateType(startDate, endDate, "creation_date"));
+    response.setModifiedCounts(getAnalysisCountsPerDateType(startDate, endDate, "last_modified_date"));
     return response;
   }
 
-  public UserAnalysisCounts readAnalysisCounts(Date startDate, Date endDate, String dateColumn) {
-    String sql1 = """
+  UserAnalysisCounts getAnalysisCountsPerDateType(Date startDate, Date endDate, String dateTypeColumn) {
+
+    UserAnalysisCounts counts = new UserAnalysisCountsImpl();
+
+    // All analyses in this time period
+    List<StudyCount> allAnalyses =  readAnalysisCountsByStudy(startDate, endDate, dateTypeColumn, false);
+    counts.setAnalysesCountPerStudy(allAnalyses);
+    int allCount = allAnalyses.stream().map(StudyCount::getCount).reduce(0, Integer::sum);
+    counts.setTotalAnalysesCount(allCount);
+
+    // Imported analyses in this time period
+    List<StudyCount> importedAnalyses =  readAnalysisCountsByStudy(startDate, endDate, dateTypeColumn, true);
+    counts.setImportedAnalysesPerStudy(importedAnalyses);
+    int importedCount = importedAnalyses.stream().map(StudyCount::getCount).reduce(0, Integer::sum);
+    counts.setTotalImportedAnalysesCount(importedCount);
+
+    return counts;
+  }
+
+  public List<StudyCount> readAnalysisCountsByStudy(Date startDate, Date endDate, String dateColumn, boolean limitToImports) {
+    String sqlTemplate = """
 select count(analysis_id) as cnt, study_id
 from %s.analysis
 where %s > ? and %s <= ?
+%s
 group by study_id
 order by cnt desc
         """;
-    String sql2 = String.format(sql1, _userSchema, dateColumn, dateColumn);
+    String importClause = limitToImports? "and provenance is not null" + System.lineSeparator(): "";
+    String sql = String.format(sqlTemplate, _userSchema, dateColumn, dateColumn, importClause);
 
     java.sql.Date sqlStartDate = java.sql.Date.valueOf(LocalDate.of(1990, 1, 1)); // epoch start
     if (startDate != null) sqlStartDate = new java.sql.Date(startDate.getTime());
@@ -397,22 +418,25 @@ order by cnt desc
 
     return new SQLRunner(
             Resources.getUserDataSource(),
-            sql2,
+            sql,
             "read-analysis-counts"
     ).executeQuery(
             new Object[]{ sqlStartDate, sqlEndDate },
             new Integer[]{ Types.DATE, Types.DATE },
             rs -> {
-              UserAnalysisCounts counts = new UserAnalysisCountsImpl();
-              counts.setTotalCount(null);
-              counts.setTotalSharesCount(null);
-              counts.setCountPerStudy(null);
-              counts.setSharesPerStudy(null);
-              return counts;
+              List<StudyCount> countPerStudy = new ArrayList<>();
+              while (rs.next()) {
+                int count = rs.getInt("CNT");
+                String studyId = rs.getString("STUDY_ID");
+                StudyCount sc = new StudyCountImpl();
+                sc.setCount(count);
+                sc.setStudyId(studyId);
+                countPerStudy.add(sc);
+              }
+              return countPerStudy;
             }
     );
   }
-
 
   /***************************************************************************************
    *** Analysis object population methods
