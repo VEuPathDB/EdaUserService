@@ -31,6 +31,7 @@ containerBuild {
 
     // Main Class Name
     mainClassName = "Main"
+
   }
 
   // Docker build configuration.
@@ -101,19 +102,17 @@ val log4j         = "2.17.2"      // Log4J version
 val metrics       = "0.15.0"      // Prometheus lib version
 
 
-// use local EdaCommon compiled schema if project exists, else use released version;
-//    this mirrors the way we use local EdaCommon code if available
 val edaCommonLocalProjectDir = findProject(":edaCommon")?.projectDir
-
 val commonRamlOutFileName = "$projectDir/schema/eda-common-lib.raml"
 
-val mergeRamlTask = tasks.named("merge-raml");
-
-val fetchEdaCommonRamlTask = tasks.register("fetch-eda-common-schema") {
-  doLast {
+tasks.named("merge-raml") {
+  // Hook into merge-raml to download or fetch EDA Common RAML before merging
+  doFirst {
     val commonRamlOutFile = File(commonRamlOutFileName)
     commonRamlOutFile.delete()
 
+    // use local EdaCommon compiled schema if project exists, else use released version;
+    // this mirrors the way we use local EdaCommon code if available
     if (edaCommonLocalProjectDir != null) {
       val commonRamlFile = File("${edaCommonLocalProjectDir}/schema/library.raml")
       logger.lifecycle("Copying file from ${commonRamlFile.path} to ${commonRamlOutFile.path}")
@@ -125,16 +124,13 @@ val fetchEdaCommonRamlTask = tasks.register("fetch-eda-common-schema") {
       URL(edaCommonRamlUrl).openStream().use { it.transferTo(FileOutputStream(commonRamlOutFile)) }
     }
   }
-}
-mergeRamlTask.get().dependsOn(fetchEdaCommonRamlTask)
-
-val cleanEdaCommonSchemaTask = tasks.register("clean-eda-common-schema") {
+  // After merge is complete, delete the EDA Common RAML from this project.
   doLast {
     logger.lifecycle("Deleting file $commonRamlOutFileName")
     File(commonRamlOutFileName).delete()
   }
 }
-mergeRamlTask.get().finalizedBy(cleanEdaCommonSchemaTask)
+
 
 // ensures changing modules are never cached
 configurations.all {
