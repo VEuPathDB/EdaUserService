@@ -375,8 +375,8 @@ public class UserDataFactory {
     UserAnalysisMetricsResponseImpl response = new UserAnalysisMetricsResponseImpl();
     response.setStartDate(startDate);
     response.setStartDate(endDate);
-    response.setCreationCounts(getAnalysisCountsPerDateType(startDate, endDate, "creation_date"));
-    response.setModifiedCounts(getAnalysisCountsPerDateType(startDate, endDate, "last_modified_date"));
+    response.setCreationCounts(getAnalysisCountsPerDateType(startDate, endDate, "creation_time"));
+    response.setModifiedCounts(getAnalysisCountsPerDateType(startDate, endDate, "modification_time"));
     return response;
   }
 
@@ -402,7 +402,7 @@ public class UserDataFactory {
   public List<StudyCount> readAnalysisCountsByStudy(Date startDate, Date endDate, String dateColumn, boolean limitToImports) {
     String sqlTemplate = """
 select count(analysis_id) as cnt, study_id
-from %s.analysis
+from %sanalysis
 where %s > ? and %s <= ?
 %s
 group by study_id
