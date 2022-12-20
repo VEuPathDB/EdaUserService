@@ -593,14 +593,34 @@ types:
     type: object
     additionalProperties: false
     properties:
-      totalAnalysesCount: integer
-      totalImportedAnalysesCount: integer
+      allAnalysesCount: integer
+      importedAnalysesCount: integer
       analysesCountPerStudy: StudyCount[]
       importedAnalysesPerStudy: StudyCount[]
+      registeredUsersCount: integer
+      guestUsersCount: integer
+      registeredAnalysesCount: integer
+      guestAnalysesCount: integer
+      registeredFiltersCount: integer
+      guestFiltersCount: integer
+      registeredVisualizationsCount: integer
+      guestVisualizationsCount: integer
+      registeredUsersAnalysesCounts: UsersObjectsCount[]
+      guestUsersAnalysesCounts: UsersObjectsCount[]
+      registeredUsersFiltersCounts: UsersObjectsCount[]
+      guestUsersFiltersCounts: UsersObjectsCount[]
+      registeredUsersVisualizationsCounts: UsersObjectsCount[]
+      guestUsersVisualizationsCounts: UsersObjectsCount[]
   StudyCount:
     type: object
     additionalProperties: false
     properties:
       studyId: string
       count: integer
+  UsersObjectsCount:
+    type: object
+    additionalProperties: false
+    properties:
+      objectsCount: integer
+      usersCount: integer
 
