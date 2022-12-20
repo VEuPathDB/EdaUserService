@@ -18,7 +18,11 @@ public class Main extends Server {
 
   @Override
   protected ContainerResources newResourceConfig(Options options) {
-    return new Resources(options);
+    Resources r = new Resources(options);
+    /* uncomment to include jersey traces in response header
+    r.property("jersey.config.server.tracing.type", "ALL").property("jersey.config.server.tracing.threshold", "VERBOSE");
+    */
+    return r;
   }
 
   public static class QLF implements QueryLogConfig {

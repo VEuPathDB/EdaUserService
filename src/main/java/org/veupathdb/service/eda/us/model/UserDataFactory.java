@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import jakarta.ws.rs.BadRequestException;
@@ -379,16 +380,16 @@ public class UserDataFactory {
     IsGuest(int flag) { this.flag = flag;}
   }
 
-  public UserAnalysisMetricsResponse readAnalysisMetrics(Date startDate, Date endDate) {
+  public UserAnalysisMetricsResponse readAnalysisMetrics(LocalDate startDate, LocalDate endDate) {
     UserAnalysisMetricsResponseImpl response = new UserAnalysisMetricsResponseImpl();
-    response.setStartDate(startDate);
-    response.setStartDate(endDate);
+    response.setStartDate(Date.from(startDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
+    response.setStartDate(Date.from(startDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
     response.setCreationCounts(getAnalysisCountsPerDateType(startDate, endDate, "creation_time"));
     response.setModifiedCounts(getAnalysisCountsPerDateType(startDate, endDate, "modification_time"));
     return response;
   }
 
-  UserAnalysisCounts getAnalysisCountsPerDateType(Date startDate, Date endDate, String dateTypeColumn) {
+  UserAnalysisCounts getAnalysisCountsPerDateType(LocalDate startDate, LocalDate endDate, String dateTypeColumn) {
 
     UserAnalysisCounts counts = new UserAnalysisCountsImpl();
 
@@ -439,7 +440,7 @@ public class UserDataFactory {
     return counts;
   }
 
-  public List<StudyCount> readAnalysisCountsByStudy(Date startDate, Date endDate, String dateColumn, Imported imported) {
+  public List<StudyCount> readAnalysisCountsByStudy(LocalDate startDate, LocalDate endDate, String dateColumn, Imported imported) {
     String sqlTemplate = """
 select count(analysis_id) as cnt, study_id
 from %sanalysis
@@ -451,8 +452,8 @@ order by cnt desc
     String importClause = imported == Imported.YES? "and provenance is not null" + System.lineSeparator(): "";
     String sql = String.format(sqlTemplate, _userSchema, dateColumn, dateColumn, importClause);
 
-    java.sql.Date sqlStartDate = startDate != null ? new java.sql.Date(startDate.getTime()) : java.sql.Date.valueOf(LocalDate.of(1990, 1, 1));
-    java.sql.Date sqlEndDate = endDate != null ? new java.sql.Date(endDate.getTime()) : java.sql.Date.valueOf(LocalDate.of(2090, 1, 1));
+    java.sql.Date sqlStartDate = java.sql.Date.valueOf(startDate);
+    java.sql.Date sqlEndDate = java.sql.Date.valueOf(endDate);
 
     return new SQLRunner(
             Resources.getUserDataSource(),
@@ -478,7 +479,7 @@ order by cnt desc
 
   // collect a histogram of counts of number of users with a number of some object (eg analyses or filters) from the analysis table.
   // the objects are aggregated by the aggregateObjectsSql.  EG:  "count(analysis_id)" or "sum(num_filters)"
-  public List<UsersObjectsCount> readObjectCountsByUserCounts(String aggregateObjectSql, Date startDate, Date endDate, String dateColumn, IsGuest isGuest) {
+  public List<UsersObjectsCount> readObjectCountsByUserCounts(String aggregateObjectSql, LocalDate startDate, LocalDate endDate, String dateColumn, IsGuest isGuest) {
     String sqlTemplate = """
   select count(user_id) as user_cnt, objects
   from (
@@ -495,8 +496,8 @@ order by cnt desc
 
     String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema, dateColumn, dateColumn);
 
-    java.sql.Date sqlStartDate = startDate != null ? new java.sql.Date(startDate.getTime()) : java.sql.Date.valueOf(LocalDate.of(1990, 1, 1));
-    java.sql.Date sqlEndDate = endDate != null ? new java.sql.Date(endDate.getTime()) : java.sql.Date.valueOf(LocalDate.of(2090, 1, 1));
+    java.sql.Date sqlStartDate = java.sql.Date.valueOf(startDate);
+    java.sql.Date sqlEndDate = java.sql.Date.valueOf(endDate);
 
     return new SQLRunner(
             Resources.getUserDataSource(),
