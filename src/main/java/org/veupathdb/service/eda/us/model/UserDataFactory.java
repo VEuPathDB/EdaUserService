@@ -449,18 +449,15 @@ where %s > ? and %s <= ?
 group by study_id
 order by cnt desc
         """;
-    String importClause = imported == Imported.YES? "and provenance is not null" + System.lineSeparator(): "";
+    String importClause = imported == Imported.YES ? "and provenance is not null" + System.lineSeparator() : "";
     String sql = String.format(sqlTemplate, _userSchema, dateColumn, dateColumn, importClause);
-
-    java.sql.Date sqlStartDate = java.sql.Date.valueOf(startDate);
-    java.sql.Date sqlEndDate = java.sql.Date.valueOf(endDate);
 
     return new SQLRunner(
             Resources.getUserDataSource(),
             sql,
             "read-analysis-counts"
     ).executeQuery(
-            new Object[]{ sqlStartDate, sqlEndDate },
+            new Object[]{ java.sql.Date.valueOf(startDate), java.sql.Date.valueOf(endDate) },
             new Integer[]{ Types.DATE, Types.DATE },
             rs -> {
               List<StudyCount> countPerStudy = new ArrayList<>();
@@ -496,15 +493,12 @@ order by cnt desc
 
     String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema, dateColumn, dateColumn);
 
-    java.sql.Date sqlStartDate = java.sql.Date.valueOf(startDate);
-    java.sql.Date sqlEndDate = java.sql.Date.valueOf(endDate);
-
     return new SQLRunner(
             Resources.getUserDataSource(),
             sql,
-            "read-analysis-counts"
+            "read-user-object-counts"
     ).executeQuery(
-            new Object[]{ sqlStartDate, sqlEndDate, isGuest.flag },
+            new Object[]{ java.sql.Date.valueOf(startDate), java.sql.Date.valueOf(endDate), isGuest.flag },
             new Integer[]{ Types.DATE, Types.DATE, Types.INTEGER },
             rs -> {
               List<UsersObjectsCount> counts = new ArrayList<>();
