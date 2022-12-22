@@ -69,6 +69,8 @@ public class Resources extends ContainerResources {
     return DbManager.userDatabase().getDataSource();
   }
 
+  public static DataSource getAccountsDataSource() { return DbManager.accountDatabase().getDataSource(); }
+
   public static String getUserDbSchema(String projectId) {
     if (!SCHEMA_MAP.containsKey(projectId)) {
       throw new NotFoundException("Invalid project ID: " + projectId);

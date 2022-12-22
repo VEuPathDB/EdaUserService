@@ -1,12 +1,5 @@
 package org.veupathdb.service.eda.us.model;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.*;
-import java.util.stream.Collectors;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import org.apache.logging.log4j.LogManager;
@@ -18,6 +11,16 @@ import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
 import org.veupathdb.service.eda.us.Utils;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Performs all database operations for the user service
@@ -371,86 +374,45 @@ public class UserDataFactory {
   /***************************************************************************************
    *** Read analysis metrics
    **************************************************************************************/
-  enum Imported {
+  public enum Imported {
     YES, NO
   }
-  enum IsGuest {
+  public enum IsGuest {
     YES(1), NO(0);
     private final int flag;
     IsGuest(int flag) { this.flag = flag;}
   }
-
-  public UserAnalysisMetricsResponse readAnalysisMetrics(LocalDate startDate, LocalDate endDate) {
-    UserAnalysisMetricsResponseImpl response = new UserAnalysisMetricsResponseImpl();
-    response.setStartDate(Date.from(startDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
-    response.setStartDate(Date.from(startDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
-    response.setCreationCounts(getAnalysisCountsPerDateType(startDate, endDate, "creation_time"));
-    response.setModifiedCounts(getAnalysisCountsPerDateType(startDate, endDate, "modification_time"));
-    return response;
+  public List<String> getIgnoreInMetricsUserIds() {
+    String sql = """
+            select user_id from useraccounts.account_properties
+            where key = 'ignore_in_metrics' and value = 'true'
+            """;
+    return new SQLRunner(
+            Resources.getAccountsDataSource(),
+            sql,
+            "get-ignore-in-metrics-user-ids"
+    ).executeQuery(
+            rs -> {
+              List<String> userIds = new ArrayList<>();
+              while (rs.next()) userIds.add(Integer.toString(rs.getInt("USER_ID")));
+              return userIds;
+            }
+    );
   }
 
-  UserAnalysisCounts getAnalysisCountsPerDateType(LocalDate startDate, LocalDate endDate, String dateTypeColumn) {
-
-    UserAnalysisCounts counts = new UserAnalysisCountsImpl();
-
-    // All analyses in this time period
-    List<StudyCount> allAnalyses =  readAnalysisCountsByStudy(startDate, endDate, dateTypeColumn, Imported.NO);
-    counts.setAnalysesCountPerStudy(allAnalyses);
-    int allCount = allAnalyses.stream().map(StudyCount::getCount).reduce(0, Integer::sum);
-    counts.setAllAnalysesCount(allCount);
-
-    // Imported analyses in this time period
-    List<StudyCount> importedAnalyses =  readAnalysisCountsByStudy(startDate, endDate, dateTypeColumn, Imported.YES);
-    counts.setImportedAnalysesPerStudy(importedAnalyses);
-    int importedCount = importedAnalyses.stream().map(StudyCount::getCount).reduce(0, Integer::sum);
-    counts.setImportedAnalysesCount(importedCount);
-
-    // Registered user analyses in this time period
-    List<UsersObjectsCount> registeredUsersAnalyses = readObjectCountsByUserCounts("count(analysis_id)", startDate, endDate, dateTypeColumn, IsGuest.NO);
-    counts.setRegisteredUsersAnalysesCounts(registeredUsersAnalyses);
-    counts.setRegisteredUsersCount(registeredUsersAnalyses.stream().map(UsersObjectsCount::getUsersCount).reduce(0, Integer::sum));
-    counts.setRegisteredAnalysesCount(registeredUsersAnalyses.stream().map(uoc->uoc.getObjectsCount() * uoc.getUsersCount()).reduce(0, Integer::sum));
-
-    // Guest user analyses in this time period
-    List<UsersObjectsCount> guestUsersAnalyses = readObjectCountsByUserCounts("count(analysis_id)", startDate, endDate, dateTypeColumn, IsGuest.YES);
-    counts.setGuestUsersAnalysesCounts(guestUsersAnalyses);
-    counts.setGuestUsersCount(guestUsersAnalyses.stream().map(UsersObjectsCount::getUsersCount).reduce(0, Integer::sum));
-    counts.setGuestAnalysesCount(guestUsersAnalyses.stream().map(uoc->uoc.getObjectsCount() * uoc.getUsersCount()).reduce(0, Integer::sum));
-
-    // Registered user filters in this time period
-    List<UsersObjectsCount> registeredUsersFilters = readObjectCountsByUserCounts("sum(num_filters)", startDate, endDate, dateTypeColumn, IsGuest.NO);
-    counts.setRegisteredUsersFiltersCounts(registeredUsersFilters);
-    counts.setRegisteredFiltersCount(registeredUsersFilters.stream().map(uoc->uoc.getObjectsCount() * uoc.getUsersCount()).reduce(0, Integer::sum));
-
-    // Guest user filters in this time period
-    List<UsersObjectsCount> guestUsersFilters = readObjectCountsByUserCounts("sum(num_filters)", startDate, endDate, dateTypeColumn, IsGuest.YES);
-    counts.setGuestUsersFiltersCounts(guestUsersFilters);
-    counts.setGuestFiltersCount(guestUsersFilters.stream().map(uoc->uoc.getObjectsCount() * uoc.getUsersCount()).reduce(0, Integer::sum));
-
-    // Registered user visualizations in this time period
-    List<UsersObjectsCount> registeredUsersVizs = readObjectCountsByUserCounts("sum(num_visualizations)", startDate, endDate, dateTypeColumn, IsGuest.NO);
-    counts.setRegisteredUsersVisualizationsCounts(registeredUsersVizs);
-    counts.setRegisteredVisualizationsCount(registeredUsersVizs.stream().map(uoc->uoc.getObjectsCount() * uoc.getUsersCount()).reduce(0, Integer::sum));
-
-    // Guest user filters in this time period
-    List<UsersObjectsCount> guestUsersVisualizations = readObjectCountsByUserCounts("sum(num_visualizations)", startDate, endDate, dateTypeColumn, IsGuest.YES);
-    counts.setGuestUsersVisualizationsCounts(guestUsersVisualizations);
-    counts.setGuestVisualizationsCount(guestUsersVisualizations.stream().map(uoc->uoc.getObjectsCount() * uoc.getUsersCount()).reduce(0, Integer::sum));
-
-    return counts;
-  }
-
-  public List<StudyCount> readAnalysisCountsByStudy(LocalDate startDate, LocalDate endDate, String dateColumn, Imported imported) {
+  public List<StudyCount> readAnalysisCountsByStudy(LocalDate startDate, LocalDate endDate, String dateColumn, String ignoreUserIds, Imported imported) {
     String sqlTemplate = """
 select count(analysis_id) as cnt, study_id
-from %sanalysis
+from %sanalysis a, %susers u
 where %s > ? and %s <= ?
+and a.user_id = u.user_id
+and a.user_id NOT IN (%s)
 %s
 group by study_id
 order by cnt desc
         """;
     String importClause = imported == Imported.YES ? "and provenance is not null" + System.lineSeparator() : "";
-    String sql = String.format(sqlTemplate, _userSchema, dateColumn, dateColumn, importClause);
+    String sql = String.format(sqlTemplate, _userSchema, _userSchema, dateColumn, dateColumn, ignoreUserIds, importClause);
 
     return new SQLRunner(
             Resources.getUserDataSource(),
@@ -476,7 +438,7 @@ order by cnt desc
 
   // collect a histogram of counts of number of users with a number of some object (eg analyses or filters) from the analysis table.
   // the objects are aggregated by the aggregateObjectsSql.  EG:  "count(analysis_id)" or "sum(num_filters)"
-  public List<UsersObjectsCount> readObjectCountsByUserCounts(String aggregateObjectSql, LocalDate startDate, LocalDate endDate, String dateColumn, IsGuest isGuest) {
+  public List<UsersObjectsCount> readObjectCountsByUserCounts(String aggregateObjectSql, LocalDate startDate, LocalDate endDate, String dateColumn, String ignoreIdsString, IsGuest isGuest) {
     String sqlTemplate = """
   select count(user_id) as user_cnt, objects
   from (
@@ -484,6 +446,7 @@ order by cnt desc
     from %sanalysis a, %susers u
     where %s > ? and %s <= ?
     and a.user_id = u.user_id
+    and a.user_id NOT IN (%s)
     and is_guest = ?
     group by a.user_id
   )
@@ -491,7 +454,7 @@ order by cnt desc
   order by objects desc
   """;
 
-    String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema, dateColumn, dateColumn);
+    String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema, dateColumn, dateColumn, ignoreIdsString);
 
     return new SQLRunner(
             Resources.getUserDataSource(),
