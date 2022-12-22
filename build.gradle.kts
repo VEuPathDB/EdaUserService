@@ -95,13 +95,8 @@ val coreLib       = "6.13.0"        // Container core lib version
 val edaCommon     = "10.0.0"        // EDA Common version
 val fgputil       = "2.9.3-jakarta" // FgpUtil version
 
-val jersey        = "3.0.4"       // Jersey/JaxRS version
-val jackson       = "2.13.3"      // FasterXML Jackson version
-val junit         = "5.8.2"       // JUnit version
-val log4j         = "2.17.2"      // Log4J version
-val metrics       = "0.15.0"      // Prometheus lib version
-
-
+// use local EdaCommon compiled schema if project exists, else use released version;
+//    this mirrors the way we use local EdaCommon code if available
 val edaCommonLocalProjectDir = findProject(":edaCommon")?.projectDir
 val commonRamlOutFileName = "$projectDir/schema/eda-common-lib.raml"
 

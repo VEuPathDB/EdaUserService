@@ -82,9 +82,9 @@ public class AnalysisDetailWithUser extends AnalysisDetailImpl {
 
   public void setDescriptor(AnalysisDescriptor descriptor) {
     super.setDescriptor(descriptor);
-    setNumFilters((long)descriptor.getSubset().getDescriptor().size());
-    setNumComputations((long)descriptor.getComputations().size());
-    setNumVisualizations((long)Functions.reduce(descriptor.getComputations(),
+    setNumFilters(descriptor.getSubset().getDescriptor().size());
+    setNumComputations(descriptor.getComputations().size());
+    setNumVisualizations(Functions.reduce(descriptor.getComputations(),
         (count, next) -> count + next.getVisualizations().size(), 0));
   }
 

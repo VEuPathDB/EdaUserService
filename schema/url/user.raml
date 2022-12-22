@@ -47,15 +47,9 @@ types:
       analysisId: string
       creationTime: string
       modificationTime: string
-      numFilters:
-        format: int64
-        type: integer
-      numComputations:
-        format: int64
-        type: integer
-      numVisualizations:
-        format: int64
-        type: integer
+      numFilters: integer
+      numComputations: integer
+      numVisualizations: integer
       provenance?: AnalysisProvenance
 
   # supports public analyses endpoint
@@ -145,3 +139,45 @@ types:
     additionalProperties: false
     properties:
       studyId: string
+
+  UserAnalysisMetricsResponse:
+    additionalProperties: false
+    properties:
+      startDate: date-only
+      endDate: date-only
+      creationCounts: UserAnalysisCounts
+      modifiedCounts: UserAnalysisCounts
+
+  UserAnalysisCounts:
+    additionalProperties: false
+    properties:
+      allAnalysesCount: integer
+      importedAnalysesCount: integer
+      analysesCountPerStudy: StudyCount[]
+      importedAnalysesPerStudy: StudyCount[]
+      registeredUsersCount: integer
+      guestUsersCount: integer
+      registeredAnalysesCount: integer
+      guestAnalysesCount: integer
+      registeredFiltersCount: integer
+      guestFiltersCount: integer
+      registeredVisualizationsCount: integer
+      guestVisualizationsCount: integer
+      registeredUsersAnalysesCounts: UsersObjectsCount[]
+      guestUsersAnalysesCounts: UsersObjectsCount[]
+      registeredUsersFiltersCounts: UsersObjectsCount[]
+      guestUsersFiltersCounts: UsersObjectsCount[]
+      registeredUsersVisualizationsCounts: UsersObjectsCount[]
+      guestUsersVisualizationsCounts: UsersObjectsCount[]
+
+  StudyCount:
+    additionalProperties: false
+    properties:
+      studyId: string
+      count: integer
+
+  UsersObjectsCount:
+    additionalProperties: false
+    properties:
+      objectsCount: integer
+      usersCount: integer

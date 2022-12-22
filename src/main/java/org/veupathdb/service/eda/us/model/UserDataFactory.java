@@ -1,13 +1,5 @@
 package org.veupathdb.service.eda.us.model;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import org.apache.logging.log4j.LogManager;
@@ -16,16 +8,19 @@ import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.veupathdb.lib.container.jaxrs.model.User;
-import org.veupathdb.service.eda.generated.model.AnalysisDescriptor;
-import org.veupathdb.service.eda.generated.model.AnalysisProvenance;
-import org.veupathdb.service.eda.generated.model.AnalysisProvenanceImpl;
-import org.veupathdb.service.eda.generated.model.AnalysisSummary;
-import org.veupathdb.service.eda.generated.model.AnalysisSummaryImpl;
-import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUser;
-import org.veupathdb.service.eda.generated.model.AnalysisSummaryWithUserImpl;
-import org.veupathdb.service.eda.generated.model.OnImportProvenanceProps;
+import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
 import org.veupathdb.service.eda.us.Utils;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Performs all database operations for the user service
@@ -377,6 +372,113 @@ public class UserDataFactory {
   }
 
   /***************************************************************************************
+   *** Read analysis metrics
+   **************************************************************************************/
+  public enum Imported {
+    YES, NO
+  }
+  public enum IsGuest {
+    YES(1), NO(0);
+    private final int flag;
+    IsGuest(int flag) { this.flag = flag;}
+  }
+  public List<String> getIgnoreInMetricsUserIds() {
+    String sql = """
+            select user_id from useraccounts.account_properties
+            where key = 'ignore_in_metrics' and value = 'true'
+            """;
+    return new SQLRunner(
+            Resources.getAccountsDataSource(),
+            sql,
+            "get-ignore-in-metrics-user-ids"
+    ).executeQuery(
+            rs -> {
+              List<String> userIds = new ArrayList<>();
+              while (rs.next()) userIds.add(Integer.toString(rs.getInt("USER_ID")));
+              return userIds;
+            }
+    );
+  }
+
+  public List<StudyCount> readAnalysisCountsByStudy(LocalDate startDate, LocalDate endDate, String dateColumn, String ignoreUserIds, Imported imported) {
+    String sqlTemplate = """
+select count(analysis_id) as cnt, study_id
+from %sanalysis a, %susers u
+where %s > ? and %s <= ?
+and a.user_id = u.user_id
+and a.user_id NOT IN (%s)
+%s
+group by study_id
+order by cnt desc
+        """;
+    String importClause = imported == Imported.YES ? "and provenance is not null" + System.lineSeparator() : "";
+    String sql = String.format(sqlTemplate, _userSchema, _userSchema, dateColumn, dateColumn, ignoreUserIds, importClause);
+
+    return new SQLRunner(
+            Resources.getUserDataSource(),
+            sql,
+            "read-analysis-counts"
+    ).executeQuery(
+            new Object[]{ java.sql.Date.valueOf(startDate), java.sql.Date.valueOf(endDate) },
+            new Integer[]{ Types.DATE, Types.DATE },
+            rs -> {
+              List<StudyCount> countPerStudy = new ArrayList<>();
+              while (rs.next()) {
+                int count = rs.getInt("CNT");
+                String studyId = rs.getString("STUDY_ID");
+                StudyCount sc = new StudyCountImpl();
+                sc.setCount(count);
+                sc.setStudyId(studyId);
+                countPerStudy.add(sc);
+              }
+              return countPerStudy;
+            }
+    );
+  }
+
+  // collect a histogram of counts of number of users with a number of some object (eg analyses or filters) from the analysis table.
+  // the objects are aggregated by the aggregateObjectsSql.  EG:  "count(analysis_id)" or "sum(num_filters)"
+  public List<UsersObjectsCount> readObjectCountsByUserCounts(String aggregateObjectSql, LocalDate startDate, LocalDate endDate, String dateColumn, String ignoreIdsString, IsGuest isGuest) {
+    String sqlTemplate = """
+  select count(user_id) as user_cnt, objects
+  from (
+    select %s as objects, a.user_id
+    from %sanalysis a, %susers u
+    where %s > ? and %s <= ?
+    and a.user_id = u.user_id
+    and a.user_id NOT IN (%s)
+    and is_guest = ?
+    group by a.user_id
+  )
+  group by objects
+  order by objects desc
+  """;
+
+    String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema, dateColumn, dateColumn, ignoreIdsString);
+
+    return new SQLRunner(
+            Resources.getUserDataSource(),
+            sql,
+            "read-user-object-counts"
+    ).executeQuery(
+            new Object[]{ java.sql.Date.valueOf(startDate), java.sql.Date.valueOf(endDate), isGuest.flag },
+            new Integer[]{ Types.DATE, Types.DATE, Types.INTEGER },
+            rs -> {
+              List<UsersObjectsCount> counts = new ArrayList<>();
+              while (rs.next()) {
+                int userCount = rs.getInt("USER_CNT");
+                int objectsCount = rs.getInt("OBJECTS");
+                UsersObjectsCount uac = new UsersObjectsCountImpl();
+                uac.setUsersCount(userCount);
+                uac.setObjectsCount(objectsCount);
+                counts.add(uac);
+              }
+              return counts;
+            }
+    );
+  }
+
+  /***************************************************************************************
    *** Analysis object population methods
    **************************************************************************************/
 
@@ -390,9 +492,9 @@ public class UserDataFactory {
     analysis.setCreationTime(Utils.formatTimestamp(rs.getTimestamp(COL_CREATION_TIME))); // timestamp not null,
     analysis.setModificationTime(Utils.formatTimestamp(rs.getTimestamp(COL_MODIFICATION_TIME))); // timestamp not null,
     analysis.setIsPublic(Resources.getUserPlatform().getBooleanValue(rs, COL_IS_PUBLIC, false)); // integer not null,
-    analysis.setNumFilters(rs.getLong(COL_NUM_FILTERS)); // integer not null,
-    analysis.setNumComputations(rs.getLong(COL_NUM_COMPUTATIONS)); // integer not null,
-    analysis.setNumVisualizations(rs.getLong(COL_NUM_VISUALIZATIONS)); // integer not null,
+    analysis.setNumFilters(rs.getInt(COL_NUM_FILTERS)); // integer not null,
+    analysis.setNumComputations(rs.getInt(COL_NUM_COMPUTATIONS)); // integer not null,
+    analysis.setNumVisualizations(rs.getInt(COL_NUM_VISUALIZATIONS)); // integer not null,
     analysis.setProvenance(createProvenance(Resources.getUserPlatform().getClobData(rs, COL_PROVENANCE))); // clob
   }
 
