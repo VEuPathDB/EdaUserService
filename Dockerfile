@@ -24,23 +24,25 @@ ENV DOCKER=build
 COPY makefile build.gradle.kts settings.gradle.kts gradlew ./
 COPY gradle gradle
 
-RUN mkdir .bin
 
 # cache gradle and dependencies installation
+RUN mkdir .bin
 RUN ./gradlew dependencies install-raml-merge install-raml-4-jax-rs
 
+# generate jaxrs api model objects
 RUN mkdir schema
-COPY ./schema ./schema
-COPY ./api.raml ./
+COPY schema schema
+COPY api.raml .
 RUN ./gradlew generate-jaxrs
 
+# generate raml api docs
 RUN npm install -gs raml2html raml2html-modern-theme && ./gradlew generate-raml-docs
 
 # copy remaining files
 COPY . .
 
 # build the project
-RUN ./gradlew clean test shadowJar --stacktrace
+RUN ./gradlew clean test shadowJar
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
