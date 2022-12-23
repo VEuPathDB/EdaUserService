@@ -7,180 +7,6 @@
 ################################################################################
 
 types:
-  AnalysisBase:
-    type: object
-    additionalProperties: false
-    properties:
-      displayName: string
-      description: string
-      studyId: string
-      studyVersion: string
-      apiVersion: string
-      isPublic: boolean
-  OnImportProvenanceProps:
-    type: object
-    additionalProperties: false
-    properties:
-      ownerId:
-        type: integer
-        format: int64
-      ownerName: string
-      ownerOrganization: string
-      analysisId: string
-      analysisName: string
-      creationTime: string
-      modificationTime: string
-      isPublic: boolean
-  CurrentProvenanceProps:
-    type: object
-    additionalProperties: false
-    properties:
-      isDeleted: boolean
-      modificationTime?: string
-      isPublic?: boolean
-  AnalysisProvenance:
-    type: object
-    additionalProperties: false
-    properties:
-      onImport: OnImportProvenanceProps
-      current: CurrentProvenanceProps
-  AnalysisSummary:
-    type: AnalysisBase
-    additionalProperties: false
-    properties:
-      analysisId: string
-      creationTime: string
-      modificationTime: string
-      numFilters: integer
-      numComputations: integer
-      numVisualizations: integer
-      provenance?: AnalysisProvenance
-  AnalysisSummaryWithUser:
-    type: AnalysisSummary
-    additionalProperties: false
-    properties:
-      userId: number
-      userName: string
-      userOrganization: string
-  AnalysisListPostRequest:
-    type: AnalysisBase
-    additionalProperties: false
-    properties:
-      notes?: string
-      descriptor: AnalysisDescriptor
-  AnalysisListPostResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      analysisId: string
-  AnalysisListPatchRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      analysisIdsToDelete?: string[]
-      inheritOwnershipFrom?:
-        type: integer
-        format: int64
-  AnalysisDetail:
-    type: AnalysisSummary
-    additionalProperties: false
-    properties:
-      notes?: string
-      descriptor: AnalysisDescriptor
-  SingleAnalysisPatchRequest:
-    type: object
-    additionalProperties: false
-    properties:
-      displayName?: string
-      description?: string
-      notes?: string
-      descriptor?: AnalysisDescriptor
-      isPublic?: boolean
-  DataTableConfig:
-    type: object
-    additionalProperties: false
-    properties:
-      variables: VariableSpec[]
-      sorting: SortSpecEntry[]
-  DataTableConfigSet:
-    type: object
-    properties:
-      //: DataTableConfig
-  AnalysisDescriptor:
-    type: object
-    additionalProperties: false
-    properties:
-      subset:
-        type: object
-        properties:
-          descriptor: object[]
-          uiSettings?: object
-      computations: Computation[]
-      starredVariables: VariableSpec[]
-      dataTableConfig: DataTableConfigSet
-      derivedVariables: DerivedVariableSpec[]
-  Computation:
-    type: object
-    additionalProperties: false
-    properties:
-      computationId: string
-      displayName: string
-      descriptor: object
-      visualizations: Visualization[]
-  Visualization:
-    type: object
-    additionalProperties: false
-    properties:
-      visualizationId: string
-      displayName: string
-      descriptor: object
-  SingleAnalysisPublicInfo:
-    type: object
-    additionalProperties: false
-    properties:
-      studyId: string
-  UserAnalysisMetricsResponse:
-    type: object
-    additionalProperties: false
-    properties:
-      startDate: date-only
-      endDate: date-only
-      creationCounts: UserAnalysisCounts
-      modifiedCounts: UserAnalysisCounts
-  UserAnalysisCounts:
-    type: object
-    additionalProperties: false
-    properties:
-      allAnalysesCount: integer
-      importedAnalysesCount: integer
-      analysesCountPerStudy: StudyCount[]
-      importedAnalysesPerStudy: StudyCount[]
-      registeredUsersCount: integer
-      guestUsersCount: integer
-      registeredAnalysesCount: integer
-      guestAnalysesCount: integer
-      registeredFiltersCount: integer
-      guestFiltersCount: integer
-      registeredVisualizationsCount: integer
-      guestVisualizationsCount: integer
-      registeredUsersAnalysesCounts: UsersObjectsCount[]
-      guestUsersAnalysesCounts: UsersObjectsCount[]
-      registeredUsersFiltersCounts: UsersObjectsCount[]
-      guestUsersFiltersCounts: UsersObjectsCount[]
-      registeredUsersVisualizationsCounts: UsersObjectsCount[]
-      guestUsersVisualizationsCounts: UsersObjectsCount[]
-  StudyCount:
-    type: object
-    additionalProperties: false
-    properties:
-      studyId: string
-      count: integer
-  UsersObjectsCount:
-    type: object
-    additionalProperties: false
-    properties:
-      objectsCount: integer
-      usersCount: integer
   VariableClass:
     type: string
     enum:
@@ -518,10 +344,21 @@ types:
     additionalProperties: false
     properties:
       study: API_StudyDetail
+  StudySourceType:
+    type: string
+    enum:
+      - curated
+      - user_submitted
   API_StudyOverview:
     type: object
     properties:
       id: string
+      datasetId: string
+      sha1hash: string
+      sourceType: StudySourceType
+      displayName: string
+      shortDisplayName: string
+      description: string
   EntityIdGetResponse:
     type: object
     properties:
@@ -704,4 +541,178 @@ types:
     discriminatorValue: date
     properties:
       distributionDefaults: API_DateDistributionDefaults
+  AnalysisBase:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName: string
+      description: string
+      studyId: string
+      studyVersion: string
+      apiVersion: string
+      isPublic: boolean
+  OnImportProvenanceProps:
+    type: object
+    additionalProperties: false
+    properties:
+      ownerId:
+        type: integer
+        format: int64
+      ownerName: string
+      ownerOrganization: string
+      analysisId: string
+      analysisName: string
+      creationTime: string
+      modificationTime: string
+      isPublic: boolean
+  CurrentProvenanceProps:
+    type: object
+    additionalProperties: false
+    properties:
+      isDeleted: boolean
+      modificationTime?: string
+      isPublic?: boolean
+  AnalysisProvenance:
+    type: object
+    additionalProperties: false
+    properties:
+      onImport: OnImportProvenanceProps
+      current: CurrentProvenanceProps
+  AnalysisSummary:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      analysisId: string
+      creationTime: string
+      modificationTime: string
+      numFilters: integer
+      numComputations: integer
+      numVisualizations: integer
+      provenance?: AnalysisProvenance
+  AnalysisSummaryWithUser:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      userId: number
+      userName: string
+      userOrganization: string
+  AnalysisListPostRequest:
+    type: AnalysisBase
+    additionalProperties: false
+    properties:
+      notes?: string
+      descriptor: AnalysisDescriptor
+  AnalysisListPostResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisId: string
+  AnalysisListPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      analysisIdsToDelete?: string[]
+      inheritOwnershipFrom?:
+        type: integer
+        format: int64
+  AnalysisDetail:
+    type: AnalysisSummary
+    additionalProperties: false
+    properties:
+      notes?: string
+      descriptor: AnalysisDescriptor
+  SingleAnalysisPatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName?: string
+      description?: string
+      notes?: string
+      descriptor?: AnalysisDescriptor
+      isPublic?: boolean
+  DataTableConfig:
+    type: object
+    additionalProperties: false
+    properties:
+      variables: VariableSpec[]
+      sorting: SortSpecEntry[]
+  DataTableConfigSet:
+    type: object
+    properties:
+      //: DataTableConfig
+  AnalysisDescriptor:
+    type: object
+    additionalProperties: false
+    properties:
+      subset:
+        type: object
+        properties:
+          descriptor: object[]
+          uiSettings?: object
+      computations: Computation[]
+      starredVariables: VariableSpec[]
+      dataTableConfig: DataTableConfigSet
+      derivedVariables: DerivedVariableSpec[]
+  Computation:
+    type: object
+    additionalProperties: false
+    properties:
+      computationId: string
+      displayName: string
+      descriptor: object
+      visualizations: Visualization[]
+  Visualization:
+    type: object
+    additionalProperties: false
+    properties:
+      visualizationId: string
+      displayName: string
+      descriptor: object
+  SingleAnalysisPublicInfo:
+    type: object
+    additionalProperties: false
+    properties:
+      studyId: string
+  UserAnalysisMetricsResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      startDate: date-only
+      endDate: date-only
+      creationCounts: UserAnalysisCounts
+      modifiedCounts: UserAnalysisCounts
+  UserAnalysisCounts:
+    type: object
+    additionalProperties: false
+    properties:
+      allAnalysesCount: integer
+      importedAnalysesCount: integer
+      analysesCountPerStudy: StudyCount[]
+      importedAnalysesPerStudy: StudyCount[]
+      registeredUsersCount: integer
+      guestUsersCount: integer
+      registeredAnalysesCount: integer
+      guestAnalysesCount: integer
+      registeredFiltersCount: integer
+      guestFiltersCount: integer
+      registeredVisualizationsCount: integer
+      guestVisualizationsCount: integer
+      registeredUsersAnalysesCounts: UsersObjectsCount[]
+      guestUsersAnalysesCounts: UsersObjectsCount[]
+      registeredUsersFiltersCounts: UsersObjectsCount[]
+      guestUsersFiltersCounts: UsersObjectsCount[]
+      registeredUsersVisualizationsCounts: UsersObjectsCount[]
+      guestUsersVisualizationsCounts: UsersObjectsCount[]
+  StudyCount:
+    type: object
+    additionalProperties: false
+    properties:
+      studyId: string
+      count: integer
+  UsersObjectsCount:
+    type: object
+    additionalProperties: false
+    properties:
+      objectsCount: integer
+      usersCount: integer
 
