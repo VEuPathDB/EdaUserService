@@ -119,6 +119,7 @@ tasks.named("merge-raml") {
       URL(edaCommonRamlUrl).openStream().use { it.transferTo(FileOutputStream(commonRamlOutFile)) }
     }
   }
+
   // After merge is complete, delete the EDA Common RAML from this project.
   doLast {
     logger.lifecycle("Deleting file $commonRamlOutFileName")
