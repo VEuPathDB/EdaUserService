@@ -19,9 +19,9 @@ public class Main extends Server {
   @Override
   protected ContainerResources newResourceConfig(Options options) {
     Resources r = new Resources(options);
-    /* for debugging, uncomment to include jersey traces in response header
+    /* for debugging, uncomment to include jersey traces in response header   */
     r.property("jersey.config.server.tracing.type", "ALL").property("jersey.config.server.tracing.threshold", "VERBOSE");
-    */
+
     return r;
   }
 
