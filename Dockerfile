@@ -18,23 +18,29 @@ RUN jlink --compress=2 --module-path /opt/jdk/jmods \
     && apk add --no-cache git sed findutils coreutils make npm curl gawk jq \
     && git config --global advice.detachedHead false
 
+RUN npm install -gs raml2html raml2html-modern-theme
+
 ENV DOCKER=build
 
-# copy files required to build dev environment and fetch dependencies
-COPY makefile build.gradle.kts settings.gradle.kts gradlew ./
+# download gradle
+COPY gradlew ./
 COPY gradle gradle
+RUN bash -c 'echo "\n\n" | ./gradlew init --type basic --dsl kotlin --no-daemon'
+#RUN rm build.gradle.kts settings.gradle.kts
 
-RUN mkdir .bin
+# copy files required to build dev environment and fetch dependencies
+COPY build.gradle.kts settings.gradle.kts ./
 
-# cache gradle and dependencies installation
-RUN ./gradlew dependencies install-raml-merge install-raml-4-jax-rs
+# download raml tools (these never change)
+RUN ./gradlew install-raml-merge install-raml-4-jax-rs
 
-RUN mkdir schema
-COPY ./schema ./schema
-COPY ./api.raml ./
-RUN ./gradlew generate-jaxrs
+# this will download project dependencies; task expected to fail so return 0
+RUN ./gradlew assemble || return 0
 
-RUN npm install -gs raml2html raml2html-modern-theme && ./gradlew generate-raml-docs
+# copy raml over for merging, then code and documentation generation
+COPY api.raml ./
+COPY schema schema
+RUN ./gradlew generate-jaxrs generate-raml-docs
 
 # copy remaining files
 COPY . .

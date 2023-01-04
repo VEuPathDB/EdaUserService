@@ -7,6 +7,8 @@ import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
+import org.gusdb.fgputil.functional.FunctionalInterfaces;
+import org.gusdb.fgputil.functional.FunctionalInterfaces.SupplierWithException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
@@ -106,6 +108,17 @@ public class UserDataFactory {
     return sqlConstant.replace(SCHEMA_MACRO, _userSchema);
   }
 
+  private <T> T handleException(SupplierWithException<T> function) {
+    try {
+      return function.get();
+    }
+    catch (Exception e) {
+      Throwable root = e instanceof SQLRunnerException ? e.getCause() : e;
+      LOG.error(root.getMessage(), root);
+      throw new RuntimeException("Unable to complete requested operation", root);
+    }
+  }
+
   /***************************************************************************************
    *** Insert user
    **************************************************************************************/
@@ -116,15 +129,18 @@ public class UserDataFactory {
       " where not exists (select user_id from " + TABLE_USERS + " where user_id = %d)";
 
   public void addUserIfAbsent(User user) {
-    // need to use format vs prepared statement for first two macros since they are in a select
-    String sql = String.format(
-        addSchema(INSERT_USER_SQL),
-        user.getUserID(),
-        Resources.getUserPlatform().convertBoolean(user.isGuest()),
-        user.getUserID());
-    LOG.debug("Trying to insert user with SQL: " + sql);
-    int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
-    LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
+    handleException(() -> {
+      // need to use format vs prepared statement for first two macros since they are in a select
+      String sql = String.format(
+          addSchema(INSERT_USER_SQL),
+          user.getUserID(),
+          Resources.getUserPlatform().convertBoolean(user.isGuest()),
+          user.getUserID());
+      LOG.debug("Trying to insert user with SQL: " + sql);
+      int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
+      LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
+      return null;
+    });
   }
 
   /***************************************************************************************
