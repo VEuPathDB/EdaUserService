@@ -26,7 +26,6 @@ ENV DOCKER=build
 COPY gradlew ./
 COPY gradle gradle
 RUN bash -c 'echo "\n\n" | ./gradlew init --type basic --dsl kotlin --no-daemon'
-#RUN rm build.gradle.kts settings.gradle.kts
 
 # copy files required to build dev environment and fetch dependencies
 COPY build.gradle.kts settings.gradle.kts ./
@@ -46,7 +45,7 @@ RUN ./gradlew generate-jaxrs generate-raml-docs
 COPY . .
 
 # build the project
-RUN ./gradlew clean test shadowJar --stacktrace
+RUN ./gradlew clean test shadowJar
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
