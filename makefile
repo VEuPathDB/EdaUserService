@@ -1,6 +1,3 @@
-GEN_PACKAGE  := $(shell ./gradlew -q print-gen-package)
-BIN_DIR      := .tools/bin
-
 C_BLUE := "\\033[94m"
 C_NONE := "\\033[0m"
 C_CYAN := "\\033[36m"
@@ -12,7 +9,6 @@ C_CYAN := "\\033[36m"
 .PHONY: default
 default:
 	@echo "Please choose one of:"
-	@echo ""
 	@echo ""
 	@echo "$(C_BLUE)  make gen-jaxrx$(C_NONE)"
 	@echo "    Generates Java classes representing API interfaces as "
@@ -58,7 +54,7 @@ gen-jaxrs:
 
 .PHONY: clean
 clean:
-	@rm -rf .bin .gradle .tools build vendor
+	@rm -rf .bin .gradle build .tools vendor
 
 .PHONY: gen-docs
 gen-docs:
