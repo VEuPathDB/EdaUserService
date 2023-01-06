@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
-import org.gusdb.fgputil.functional.FunctionalInterfaces;
+import org.gusdb.fgputil.functional.FunctionalInterfaces.Procedure;
 import org.gusdb.fgputil.functional.FunctionalInterfaces.SupplierWithException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
@@ -22,7 +22,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.gusdb.fgputil.functional.Functions.mapException;
 
 /**
  * Performs all database operations for the user service
@@ -108,15 +111,27 @@ public class UserDataFactory {
     return sqlConstant.replace(SCHEMA_MACRO, _userSchema);
   }
 
+  /***************************************************************************************
+   *** Exception handling so underlying message is not exposed to user
+   **************************************************************************************/
+
+  private static final Function<Exception,RuntimeException> EXCEPTION_MAPPER = e -> {
+    Throwable root = e instanceof SQLRunnerException ? e.getCause() : e;
+    LOG.error(root.getMessage(), root);
+    throw new RuntimeException("Unable to complete requested operation", root);
+  };
+
+  // for operations that return a value
   private <T> T handleException(SupplierWithException<T> function) {
-    try {
-      return function.get();
-    }
-    catch (Exception e) {
-      Throwable root = e instanceof SQLRunnerException ? e.getCause() : e;
-      LOG.error(root.getMessage(), root);
-      throw new RuntimeException("Unable to complete requested operation", root);
-    }
+    return mapException(function, EXCEPTION_MAPPER);
+  }
+
+  // for operations that do not return a value
+  private void handleException(Procedure procedure) {
+    mapException(() -> {
+      procedure.perform();
+      return null;
+    }, EXCEPTION_MAPPER);
   }
 
   /***************************************************************************************
@@ -139,7 +154,6 @@ public class UserDataFactory {
       LOG.debug("Trying to insert user with SQL: " + sql);
       int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
       LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
-      return null;
     });
   }
 
@@ -153,17 +167,18 @@ public class UserDataFactory {
       " where user_id = ?";
 
   public String readPreferences(long userId) {
-    return new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(READ_PREFS_SQL),
-        "read-prefs"
-    ).executeQuery(
-        new Object[]{ userId },
-        new Integer[]{ Types.BIGINT },
-        rs -> rs.next()
-          ? Resources.getUserPlatform().getClobData(rs, "preferences")
-          : "{}"
-    );
+    return handleException(() ->
+      new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(READ_PREFS_SQL),
+          "read-prefs"
+      ).executeQuery(
+          new Object[]{ userId },
+          new Integer[]{ Types.BIGINT },
+          rs -> rs.next()
+            ? Resources.getUserPlatform().getClobData(rs, "preferences")
+            : "{}"
+      ));
   }
 
   /***************************************************************************************
@@ -176,14 +191,15 @@ public class UserDataFactory {
       " where user_id = ?";
 
   public void writePreferences(long userId, String prefsObject) {
-    new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(WRITE_PREFS_SQL),
-        "write-prefs"
-    ).executeStatement(
-        new Object[]{ prefsObject, userId },
-        new Integer[]{ Types.CLOB, Types.BIGINT }
-    );
+    handleException(() ->
+      new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(WRITE_PREFS_SQL),
+          "write-prefs"
+      ).executeStatement(
+          new Object[]{prefsObject, userId},
+          new Integer[]{Types.CLOB, Types.BIGINT}
+      ));
   }
 
   /***************************************************************************************
@@ -197,23 +213,24 @@ public class UserDataFactory {
       " order by " + COL_MODIFICATION_TIME + " desc";
 
   public List<AnalysisSummary> getAnalysisSummaries(long userId) {
-    return new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(GET_ANALYSES_BY_USER_SQL),
-        "analysis-summaries"
-    ).executeQuery(
-        new Object[]{ userId },
-        new Integer[]{ Types.BIGINT },
-        rs -> {
-          List<AnalysisSummary> list = new ArrayList<>();
-          while (rs.next()) {
-            AnalysisSummary sum = new AnalysisSummaryImpl();
-            populateSummaryFields(sum, rs);
-            list.add(sum);
+    return handleException(() ->
+      new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(GET_ANALYSES_BY_USER_SQL),
+          "analysis-summaries"
+      ).executeQuery(
+          new Object[]{ userId },
+          new Integer[]{ Types.BIGINT },
+          rs -> {
+            List<AnalysisSummary> list = new ArrayList<>();
+            while (rs.next()) {
+              AnalysisSummary sum = new AnalysisSummaryImpl();
+              populateSummaryFields(sum, rs);
+              list.add(sum);
+            }
+            return list;
           }
-          return list;
-        }
-    );
+      ));
   }
 
   /***************************************************************************************
@@ -226,8 +243,8 @@ public class UserDataFactory {
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public AnalysisDetailWithUser getAnalysisById(String analysisId) {
-    try {
-      return new SQLRunner(
+    return handleException(() ->
+      new SQLRunner(
           Resources.getUserDataSource(),
           addSchema(GET_ANALYSIS_BY_ID_SQL),
           "analysis-detail"
@@ -244,12 +261,7 @@ public class UserDataFactory {
             }
             return analysis;
           }
-      );
-    }
-    catch (SQLRunnerException e) {
-      // throw underlying exception if able
-      throw e.getCause() != null && e.getCause() instanceof RuntimeException ? (RuntimeException)e.getCause() : e;
-    }
+      ));
   }
 
   /***************************************************************************************
@@ -264,14 +276,14 @@ public class UserDataFactory {
       " ) ";
 
   public void insertAnalysis(AnalysisDetailWithUser analysis) {
-    new SQLRunner(
+    handleException(() -> new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(INSERT_ANALYSIS_SQL),
         "insert-analysis"
     ).executeStatement(
         getAnalysisInsertValues(analysis),
         DETAIL_COL_TYPES
-    );
+    ));
   }
 
   /***************************************************************************************
@@ -284,24 +296,26 @@ public class UserDataFactory {
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public void updateAnalysis(AnalysisDetailWithUser analysis) {
-    int rowsUpdated = new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(UPDATE_ANALYSIS_SQL),
-        "update-analysis"
-    ).executeUpdate(
-        ArrayUtil.concatenate(
-            getAnalysisInsertValues(analysis),
-            new Object[] { analysis.getAnalysisId() } // extra ? for analysis_id in where statement
-        ),
-        ArrayUtil.concatenate(
-            DETAIL_COL_TYPES,
-            new Integer[] { Types.VARCHAR } // extra ? for analysis_id in where statement
-        )
-    );
-    if (rowsUpdated != 1) {
-      throw new IllegalStateException("Updated " + rowsUpdated +
-          " rows (should be 1) in DB when updated analysis with ID " + analysis.getAnalysisId());
-    }
+    handleException(() -> {
+      int rowsUpdated = new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(UPDATE_ANALYSIS_SQL),
+          "update-analysis"
+      ).executeUpdate(
+          ArrayUtil.concatenate(
+              getAnalysisInsertValues(analysis),
+              new Object[]{analysis.getAnalysisId()} // extra ? for analysis_id in where statement
+          ),
+          ArrayUtil.concatenate(
+              DETAIL_COL_TYPES,
+              new Integer[]{Types.VARCHAR} // extra ? for analysis_id in where statement
+          )
+      );
+      if (rowsUpdated != 1) {
+        throw new IllegalStateException("Updated " + rowsUpdated +
+            " rows (should be 1) in DB when updated analysis with ID " + analysis.getAnalysisId());
+      }
+    });
   }
 
   /***************************************************************************************
@@ -324,13 +338,14 @@ public class UserDataFactory {
     Arrays.fill(stringArr, "?");
     String sql = DELETE_ANALYSES_SQL.replace(IDS_MACRO_LIST_MACRO, String.join(", ", stringArr));
 
-    new SQLRunner(
+    handleException(() ->
+      new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(sql),
         "delete-analyses"
-    ).executeStatement(
+      ).executeStatement(
         idsToDelete
-    );
+      ));
   }
 
   /***************************************************************************************
@@ -344,22 +359,23 @@ public class UserDataFactory {
       " order by " + COL_MODIFICATION_TIME + " desc";
 
   public List<AnalysisSummaryWithUser> getPublicAnalyses() {
-    return new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(GET_PUBLIC_ANALYSES_SQL),
-        "public-analysis-summaries"
-    ).executeQuery(
-        rs -> {
-          List<AnalysisSummaryWithUser> list = new ArrayList<>();
-          while (rs.next()) {
-            AnalysisSummaryWithUser sum = new AnalysisSummaryWithUserImpl();
-            sum.setUserId(rs.getLong(COL_USER_ID));
-            populateSummaryFields(sum, rs);
-            list.add(sum);
+    return handleException(() ->
+        new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(GET_PUBLIC_ANALYSES_SQL),
+          "public-analysis-summaries"
+        ).executeQuery(
+          rs -> {
+            List<AnalysisSummaryWithUser> list = new ArrayList<>();
+            while (rs.next()) {
+              AnalysisSummaryWithUser sum = new AnalysisSummaryWithUserImpl();
+              sum.setUserId(rs.getLong(COL_USER_ID));
+              populateSummaryFields(sum, rs);
+              list.add(sum);
+            }
+            return list;
           }
-          return list;
-        }
-    );
+        ));
   }
 
   /***************************************************************************************
@@ -378,63 +394,69 @@ public class UserDataFactory {
       " )";
 
   public void transferGuestAnalysesOwnership(long fromGuestUserId, long toRegisteredUserId) {
-    new SQLRunner(
+    handleException(() ->
+      new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(TRANSFER_GUEST_ANALYSES_SQL),
         "transfer-analyses"
-    ).executeStatement(
+      ).executeStatement(
         new Object[]{ toRegisteredUserId, fromGuestUserId }
-    );
+      ));
   }
 
   /***************************************************************************************
    *** Read analysis metrics
    **************************************************************************************/
+
   public enum Imported {
     YES, NO
   }
+
   public enum IsGuest {
     YES(1), NO(0);
     private final int flag;
     IsGuest(int flag) { this.flag = flag;}
   }
+
   public List<String> getIgnoreInMetricsUserIds() {
     String sql = """
-            select user_id from useraccounts.account_properties
-            where key = 'ignore_in_metrics' and value = 'true'
-            """;
-    return new SQLRunner(
+      select user_id from useraccounts.account_properties
+      where key = 'ignore_in_metrics' and value = 'true'
+    """;
+    return handleException(() ->
+        new SQLRunner(
             Resources.getAccountsDataSource(),
             sql,
             "get-ignore-in-metrics-user-ids"
-    ).executeQuery(
+        ).executeQuery(
             rs -> {
               List<String> userIds = new ArrayList<>();
               while (rs.next()) userIds.add(Integer.toString(rs.getInt("USER_ID")));
               return userIds;
             }
-    );
+        ));
   }
 
   public List<StudyCount> readAnalysisCountsByStudy(LocalDate startDate, LocalDate endDate, String dateColumn, String ignoreUserIds, Imported imported) {
     String sqlTemplate = """
-select count(analysis_id) as cnt, study_id
-from %sanalysis a, %susers u
-where %s > ? and %s <= ?
-and a.user_id = u.user_id
-and a.user_id NOT IN (%s)
-%s
-group by study_id
-order by cnt desc
-        """;
+      select count(analysis_id) as cnt, study_id
+      from %sanalysis a, %susers u
+      where %s > ? and %s <= ?
+      and a.user_id = u.user_id
+      and a.user_id NOT IN (%s)
+      %s
+      group by study_id
+      order by cnt desc
+    """;
     String importClause = imported == Imported.YES ? "and provenance is not null" + System.lineSeparator() : "";
     String sql = String.format(sqlTemplate, _userSchema, _userSchema, dateColumn, dateColumn, ignoreUserIds, importClause);
 
-    return new SQLRunner(
+    return handleException(() ->
+        new SQLRunner(
             Resources.getUserDataSource(),
             sql,
             "read-analysis-counts"
-    ).executeQuery(
+        ).executeQuery(
             new Object[]{ java.sql.Date.valueOf(startDate), java.sql.Date.valueOf(endDate) },
             new Integer[]{ Types.DATE, Types.DATE },
             rs -> {
@@ -449,34 +471,35 @@ order by cnt desc
               }
               return countPerStudy;
             }
-    );
+        ));
   }
 
   // collect a histogram of counts of number of users with a number of some object (eg analyses or filters) from the analysis table.
   // the objects are aggregated by the aggregateObjectsSql.  EG:  "count(analysis_id)" or "sum(num_filters)"
   public List<UsersObjectsCount> readObjectCountsByUserCounts(String aggregateObjectSql, LocalDate startDate, LocalDate endDate, String dateColumn, String ignoreIdsString, IsGuest isGuest) {
     String sqlTemplate = """
-  select count(user_id) as user_cnt, objects
-  from (
-    select %s as objects, a.user_id
-    from %sanalysis a, %susers u
-    where %s > ? and %s <= ?
-    and a.user_id = u.user_id
-    and a.user_id NOT IN (%s)
-    and is_guest = ?
-    group by a.user_id
-  )
-  group by objects
-  order by objects desc
-  """;
+      select count(user_id) as user_cnt, objects
+      from (
+        select %s as objects, a.user_id
+        from %sanalysis a, %susers u
+        where %s > ? and %s <= ?
+        and a.user_id = u.user_id
+        and a.user_id NOT IN (%s)
+        and is_guest = ?
+        group by a.user_id
+      )
+      group by objects
+      order by objects desc
+    """;
 
     String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema, dateColumn, dateColumn, ignoreIdsString);
 
-    return new SQLRunner(
+    return handleException(() ->
+        new SQLRunner(
             Resources.getUserDataSource(),
             sql,
             "read-user-object-counts"
-    ).executeQuery(
+        ).executeQuery(
             new Object[]{ java.sql.Date.valueOf(startDate), java.sql.Date.valueOf(endDate), isGuest.flag },
             new Integer[]{ Types.DATE, Types.DATE, Types.INTEGER },
             rs -> {
@@ -491,7 +514,7 @@ order by cnt desc
               }
               return counts;
             }
-    );
+        ));
   }
 
   /***************************************************************************************
