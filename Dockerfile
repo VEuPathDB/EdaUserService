@@ -36,7 +36,7 @@ RUN ./gradlew install-raml-merge install-raml-4-jax-rs
 # this will download project dependencies; task expected to fail so return 0
 RUN ./gradlew assemble || return 0
 
-# copy raml over for merging, then code and documentation generation
+# copy raml over for merging, then perform code and documentation generation
 COPY api.raml ./
 COPY schema schema
 RUN ./gradlew generate-jaxrs generate-raml-docs
