@@ -73,6 +73,26 @@ tasks.shadowJar {
   archiveFileName.set("service.jar")
 }
 
+val dependencyDir = ".dependencies"
+tasks.register("download-deps", Copy::class) {
+
+  from(sourceSets.main.map(SourceSet::getRuntimeClasspath))
+  into(dependencyDir)
+
+  doFirst {
+    ant {
+      delete(dependencyDir)
+      mkdir(dependencyDir)
+    }
+  }
+
+  doLast {
+    ant {
+      delete(dependencyDir)
+    }
+  }
+}
+
 repositories {
   mavenCentral()
   mavenLocal()
