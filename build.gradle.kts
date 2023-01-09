@@ -74,7 +74,7 @@ tasks.shadowJar {
 }
 
 val dependencyDir = ".dependencies"
-tasks.register("download-deps", Copy::class) {
+tasks.register("download-dependencies", Copy::class) {
 
   from(sourceSets.main.map(SourceSet::getRuntimeClasspath))
   into(dependencyDir)

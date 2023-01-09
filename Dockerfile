@@ -33,8 +33,8 @@ COPY build.gradle.kts settings.gradle.kts ./
 # download raml tools (these never change)
 RUN ./gradlew install-raml-merge install-raml-4-jax-rs
 
-# this will download project dependencies; task expected to fail so return 0
-RUN ./gradlew download-deps
+# download project dependencies in advance
+RUN ./gradlew download-dependencies
 
 # copy raml over for merging, then perform code and documentation generation
 COPY api.raml ./
