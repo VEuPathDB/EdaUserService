@@ -4,7 +4,7 @@ import java.net.URL
 
 plugins {
   java
-  id("org.veupathdb.lib.gradle.container.container-utils") version "4.6.1"
+  id("org.veupathdb.lib.gradle.container.container-utils") version "4.7.1"
   id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
@@ -60,8 +60,6 @@ containerBuild {
 
 }
 
-tasks.register("print-gen-package") { print("org.veupathdb.service.eda") }
-
 java {
   toolchain {
     languageVersion.set(JavaLanguageVersion.of(17))
@@ -71,26 +69,6 @@ java {
 tasks.shadowJar {
   exclude("**/Log4j2Plugins.dat")
   archiveFileName.set("service.jar")
-}
-
-val dependencyDir = ".dependencies"
-tasks.register("download-dependencies", Copy::class) {
-
-  from(sourceSets.main.map(SourceSet::getRuntimeClasspath))
-  into(dependencyDir)
-
-  doFirst {
-    ant {
-      delete(dependencyDir)
-      mkdir(dependencyDir)
-    }
-  }
-
-  doLast {
-    ant {
-      delete(dependencyDir)
-    }
-  }
 }
 
 repositories {
@@ -111,9 +89,9 @@ repositories {
 //
 
 // versions
-val coreLib       = "6.13.1"        // Container core lib version
-val edaCommon     = "10.2.1"        // EDA Common version
-val fgputil       = "2.9.3-jakarta" // FgpUtil version
+val coreLib       = "6.13.2"         // Container core lib version
+val edaCommon     = "10.2.2"         // EDA Common version
+val fgputil       = "2.12.0-jakarta" // FgpUtil version
 
 // use local EdaCommon compiled schema if project exists, else use released version;
 //    this mirrors the way we use local EdaCommon code if available

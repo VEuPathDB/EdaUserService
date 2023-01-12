@@ -6,9 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
-import org.gusdb.fgputil.db.runner.SQLRunnerException;
-import org.gusdb.fgputil.functional.FunctionalInterfaces.Procedure;
-import org.gusdb.fgputil.functional.FunctionalInterfaces.SupplierWithException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
@@ -111,28 +108,13 @@ public class UserDataFactory {
     return sqlConstant.replace(SCHEMA_MACRO, _userSchema);
   }
 
-  /***************************************************************************************
-   *** Exception handling so underlying message is not exposed to user
-   **************************************************************************************/
-
-  private static final Function<Exception,RuntimeException> EXCEPTION_MAPPER = e -> {
-    Throwable root = e instanceof SQLRunnerException ? e.getCause() : e;
-    LOG.error(root.getMessage(), root);
-    throw new RuntimeException("Unable to complete requested operation", root);
+  /**
+   * Ensures all exceptions are logged and converted to runtime exceptions with a user-friendly message
+   */
+  private static final Function<Exception,RuntimeException> EXCEPTION_HANDLER = e -> {
+    LOG.error(e.getMessage(), e);
+    throw new RuntimeException("Unable to complete requested operation", e);
   };
-
-  // for operations that return a value
-  private <T> T handleException(SupplierWithException<T> function) {
-    return mapException(function, EXCEPTION_MAPPER);
-  }
-
-  // for operations that do not return a value
-  private void handleException(Procedure procedure) {
-    mapException(() -> {
-      procedure.perform();
-      return null;
-    }, EXCEPTION_MAPPER);
-  }
 
   /***************************************************************************************
    *** Insert user
@@ -144,7 +126,7 @@ public class UserDataFactory {
       " where not exists (select user_id from " + TABLE_USERS + " where user_id = %d)";
 
   public void addUserIfAbsent(User user) {
-    handleException(() -> {
+    mapException(() -> {
       // need to use format vs prepared statement for first two macros since they are in a select
       String sql = String.format(
           addSchema(INSERT_USER_SQL),
@@ -154,7 +136,8 @@ public class UserDataFactory {
       LOG.debug("Trying to insert user with SQL: " + sql);
       int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
       LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
-    });
+      return null;
+    }, EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -167,7 +150,7 @@ public class UserDataFactory {
       " where user_id = ?";
 
   public String readPreferences(long userId) {
-    return handleException(() ->
+    return mapException(() ->
       new SQLRunner(
           Resources.getUserDataSource(),
           addSchema(READ_PREFS_SQL),
@@ -178,7 +161,7 @@ public class UserDataFactory {
           rs -> rs.next()
             ? Resources.getUserPlatform().getClobData(rs, "preferences")
             : "{}"
-      ));
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -191,7 +174,7 @@ public class UserDataFactory {
       " where user_id = ?";
 
   public void writePreferences(long userId, String prefsObject) {
-    handleException(() ->
+    mapException(() ->
       new SQLRunner(
           Resources.getUserDataSource(),
           addSchema(WRITE_PREFS_SQL),
@@ -199,7 +182,7 @@ public class UserDataFactory {
       ).executeStatement(
           new Object[]{prefsObject, userId},
           new Integer[]{Types.CLOB, Types.BIGINT}
-      ));
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -213,7 +196,7 @@ public class UserDataFactory {
       " order by " + COL_MODIFICATION_TIME + " desc";
 
   public List<AnalysisSummary> getAnalysisSummaries(long userId) {
-    return handleException(() ->
+    return mapException(() ->
       new SQLRunner(
           Resources.getUserDataSource(),
           addSchema(GET_ANALYSES_BY_USER_SQL),
@@ -230,7 +213,7 @@ public class UserDataFactory {
             }
             return list;
           }
-      ));
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -243,7 +226,7 @@ public class UserDataFactory {
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public AnalysisDetailWithUser getAnalysisById(String analysisId) {
-    return handleException(() ->
+    return mapException(() ->
       new SQLRunner(
           Resources.getUserDataSource(),
           addSchema(GET_ANALYSIS_BY_ID_SQL),
@@ -261,7 +244,7 @@ public class UserDataFactory {
             }
             return analysis;
           }
-      ));
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -276,14 +259,14 @@ public class UserDataFactory {
       " ) ";
 
   public void insertAnalysis(AnalysisDetailWithUser analysis) {
-    handleException(() -> new SQLRunner(
+    mapException(() -> new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(INSERT_ANALYSIS_SQL),
         "insert-analysis"
     ).executeStatement(
         getAnalysisInsertValues(analysis),
         DETAIL_COL_TYPES
-    ));
+    ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -296,7 +279,7 @@ public class UserDataFactory {
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public void updateAnalysis(AnalysisDetailWithUser analysis) {
-    handleException(() -> {
+    mapException(() -> {
       int rowsUpdated = new SQLRunner(
           Resources.getUserDataSource(),
           addSchema(UPDATE_ANALYSIS_SQL),
@@ -315,7 +298,7 @@ public class UserDataFactory {
         throw new IllegalStateException("Updated " + rowsUpdated +
             " rows (should be 1) in DB when updated analysis with ID " + analysis.getAnalysisId());
       }
-    });
+    }, EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -338,14 +321,14 @@ public class UserDataFactory {
     Arrays.fill(stringArr, "?");
     String sql = DELETE_ANALYSES_SQL.replace(IDS_MACRO_LIST_MACRO, String.join(", ", stringArr));
 
-    handleException(() ->
+    mapException(() ->
       new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(sql),
         "delete-analyses"
       ).executeStatement(
         idsToDelete
-      ));
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -359,7 +342,7 @@ public class UserDataFactory {
       " order by " + COL_MODIFICATION_TIME + " desc";
 
   public List<AnalysisSummaryWithUser> getPublicAnalyses() {
-    return handleException(() ->
+    return mapException(() ->
         new SQLRunner(
           Resources.getUserDataSource(),
           addSchema(GET_PUBLIC_ANALYSES_SQL),
@@ -375,7 +358,7 @@ public class UserDataFactory {
             }
             return list;
           }
-        ));
+        ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -394,14 +377,14 @@ public class UserDataFactory {
       " )";
 
   public void transferGuestAnalysesOwnership(long fromGuestUserId, long toRegisteredUserId) {
-    handleException(() ->
+    mapException(() ->
       new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(TRANSFER_GUEST_ANALYSES_SQL),
         "transfer-analyses"
       ).executeStatement(
         new Object[]{ toRegisteredUserId, fromGuestUserId }
-      ));
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -423,7 +406,7 @@ public class UserDataFactory {
       select user_id from useraccounts.account_properties
       where key = 'ignore_in_metrics' and value = 'true'
     """;
-    return handleException(() ->
+    return mapException(() ->
         new SQLRunner(
             Resources.getAccountsDataSource(),
             sql,
@@ -434,7 +417,7 @@ public class UserDataFactory {
               while (rs.next()) userIds.add(Integer.toString(rs.getInt("USER_ID")));
               return userIds;
             }
-        ));
+        ), EXCEPTION_HANDLER);
   }
 
   static private String getStudyTypeSql(MetricsUserProjectIdAnalysesGetStudyType studyType) {
@@ -460,7 +443,7 @@ order by cnt desc
     String importClause = imported == Imported.YES ? "and provenance is not null" + System.lineSeparator() : "";
     String sql = String.format(sqlTemplate, _userSchema, _userSchema, dateColumn, dateColumn, getStudyTypeSql(studyType), ignoreUserIds, importClause);
 
-    return handleException(() ->
+    return mapException(() ->
         new SQLRunner(
             Resources.getUserDataSource(),
             sql,
@@ -480,7 +463,7 @@ order by cnt desc
               }
               return countPerStudy;
             }
-        ));
+        ), EXCEPTION_HANDLER);
   }
 
   // collect a histogram of counts of number of users with a number of some object (eg analyses or filters) from the analysis table.
@@ -505,7 +488,7 @@ order by cnt desc
     String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema,
             dateColumn, dateColumn, getStudyTypeSql(studyType), ignoreIdsString);
 
-    return handleException(() ->
+    return mapException(() ->
         new SQLRunner(
             Resources.getUserDataSource(),
             sql,
@@ -525,7 +508,7 @@ order by cnt desc
               }
               return counts;
             }
-        ));
+        ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
