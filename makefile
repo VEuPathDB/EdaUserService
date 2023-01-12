@@ -1,8 +1,3 @@
-GEN_PACKAGE  := $(shell ./gradlew -q print-gen-package)
-BIN_DIR      := .tools/bin
-
-FETCH_EDA_COMMON_SCHEMA := $(shell ./gradlew -q "print-eda-common-schema-fetch")
-
 C_BLUE := "\\033[94m"
 C_NONE := "\\033[0m"
 C_CYAN := "\\033[36m"
@@ -14,10 +9,6 @@ C_CYAN := "\\033[36m"
 .PHONY: default
 default:
 	@echo "Please choose one of:"
-	@echo ""
-	@echo "$(C_BLUE)  make install-dev-env$(C_NONE)"
-	@echo "    Ensures the current dev environment has the necessary "
-	@echo "    installable tools to build this project."
 	@echo ""
 	@echo "$(C_BLUE)  make gen-jaxrx$(C_NONE)"
 	@echo "    Generates Java classes representing API interfaces as "
@@ -51,39 +42,23 @@ test: install-dev-env gen-jaxrs gen-docs
 	@./gradlew clean test
 
 .PHONY: jar
-jar: install-dev-env build/libs/service.jar
+jar: build/libs/service.jar
 
 .PHONY: docker
 docker:
 	@./gradlew build-docker --stacktrace
 
-.PHONY: install-dev-env
-install-dev-env:
-	@if [ ! -d .tools ]; then git clone https://github.com/VEuPathDB/lib-jaxrs-container-build-utils .tools; else cd .tools && git pull && cd ..; fi
-	@./gradlew check-env install-raml-4-jax-rs
-	@$(BIN_DIR)/install-raml-merge.sh
-	@$(BIN_DIR)/install-npm.sh
-
 .PHONY: gen-jaxrs
-gen-jaxrs: api.raml merge-raml
-	@$(BIN_DIR)/generate-jaxrs.sh $(GEN_PACKAGE)
-	@$(BIN_DIR)/generate-jaxrs-streams.sh $(GEN_PACKAGE)
-	@$(BIN_DIR)/generate-jaxrs-postgen-mods.sh $(GEN_PACKAGE)
+gen-jaxrs:
+	@./gradlew generate-jaxrs
 
 .PHONY: clean
 clean:
-	@rm -rf .bin .gradle .tools build vendor
+	@rm -rf .bin .gradle build .tools vendor
 
 .PHONY: gen-docs
-gen-docs: api.raml merge-raml
-	@$(BIN_DIR)/generate-docs.sh
-
-.PHONY: merge-raml
-merge-raml:
-	@echo "Downloading dependencies..."
-	$(FETCH_EDA_COMMON_SCHEMA) > schema/url/eda-common-lib.raml
-	$(BIN_DIR)/merge-raml schema > schema/library.raml
-	rm schema/url/eda-common-lib.raml
+gen-docs:
+	@./gradlew generate-raml-docs
 
 #
 # File based targets

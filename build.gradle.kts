@@ -1,8 +1,10 @@
 import org.veupathdb.lib.gradle.container.util.Logger.Level
+import java.io.FileOutputStream
+import java.net.URL
 
 plugins {
   java
-  id("org.veupathdb.lib.gradle.container.container-utils") version "4.6.0"
+  id("org.veupathdb.lib.gradle.container.container-utils") version "4.7.1"
   id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
@@ -29,6 +31,7 @@ containerBuild {
 
     // Main Class Name
     mainClassName = "Main"
+
   }
 
   // Docker build configuration.
@@ -56,8 +59,6 @@ containerBuild {
   }
 
 }
-
-tasks.register("print-gen-package") { print("org.veupathdb.service.eda") }
 
 java {
   toolchain {
@@ -88,21 +89,42 @@ repositories {
 //
 
 // versions
-val coreLib       = "6.13.1"        // Container core lib version
-val edaCommon     = "10.2.1"        // EDA Common version
-val fgputil       = "2.9.3-jakarta" // FgpUtil version
+val coreLib       = "6.13.2"         // Container core lib version
+val edaCommon     = "10.2.2"         // EDA Common version
+val fgputil       = "2.12.0-jakarta" // FgpUtil version
 
 // use local EdaCommon compiled schema if project exists, else use released version;
 //    this mirrors the way we use local EdaCommon code if available
 val edaCommonLocalProjectDir = findProject(":edaCommon")?.projectDir
-val edaCommonSchemaFetch =
-  if (edaCommonLocalProjectDir != null)
-    "cat ${edaCommonLocalProjectDir}/schema/library.raml"
-  else
-    "curl https://raw.githubusercontent.com/VEuPathDB/EdaCommon/v${edaCommon}/schema/library.raml"
+val commonRamlOutFileName = "$projectDir/schema/eda-common-lib.raml"
 
-// register a task that prints the command to fetch EdaCommon schema; used to pull down raml lib
-tasks.register("print-eda-common-schema-fetch") { print(edaCommonSchemaFetch) }
+tasks.named("merge-raml") {
+  // Hook into merge-raml to download or fetch EDA Common RAML before merging
+  doFirst {
+    val commonRamlOutFile = File(commonRamlOutFileName)
+    commonRamlOutFile.delete()
+
+    // use local EdaCommon compiled schema if project exists, else use released version;
+    // this mirrors the way we use local EdaCommon code if available
+    if (edaCommonLocalProjectDir != null) {
+      val commonRamlFile = File("${edaCommonLocalProjectDir}/schema/library.raml")
+      logger.lifecycle("Copying file from ${commonRamlFile.path} to ${commonRamlOutFile.path}")
+      commonRamlFile.copyTo(commonRamlOutFile);
+    } else {
+      commonRamlOutFile.createNewFile();
+      val edaCommonRamlUrl = "https://raw.githubusercontent.com/VEuPathDB/EdaCommon/v${edaCommon}/schema/library.raml"
+      logger.lifecycle("Downloading file contents from $edaCommonRamlUrl")
+      URL(edaCommonRamlUrl).openStream().use { it.transferTo(FileOutputStream(commonRamlOutFile)) }
+    }
+  }
+
+  // After merge is complete, delete the EDA Common RAML from this project.
+  doLast {
+    logger.lifecycle("Deleting file $commonRamlOutFileName")
+    File(commonRamlOutFileName).delete()
+  }
+}
+
 
 // ensures changing modules are never cached
 configurations.all {

@@ -6,7 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
-import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
@@ -20,7 +19,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.gusdb.fgputil.functional.Functions.mapException;
 
 /**
  * Performs all database operations for the user service
@@ -106,6 +108,14 @@ public class UserDataFactory {
     return sqlConstant.replace(SCHEMA_MACRO, _userSchema);
   }
 
+  /**
+   * Ensures all exceptions are logged and converted to runtime exceptions with a user-friendly message
+   */
+  private static final Function<Exception,RuntimeException> EXCEPTION_HANDLER = e -> {
+    LOG.error(e.getMessage(), e);
+    throw new RuntimeException("Unable to complete requested operation", e);
+  };
+
   /***************************************************************************************
    *** Insert user
    **************************************************************************************/
@@ -116,15 +126,18 @@ public class UserDataFactory {
       " where not exists (select user_id from " + TABLE_USERS + " where user_id = %d)";
 
   public void addUserIfAbsent(User user) {
-    // need to use format vs prepared statement for first two macros since they are in a select
-    String sql = String.format(
-        addSchema(INSERT_USER_SQL),
-        user.getUserID(),
-        Resources.getUserPlatform().convertBoolean(user.isGuest()),
-        user.getUserID());
-    LOG.debug("Trying to insert user with SQL: " + sql);
-    int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
-    LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
+    mapException(() -> {
+      // need to use format vs prepared statement for first two macros since they are in a select
+      String sql = String.format(
+          addSchema(INSERT_USER_SQL),
+          user.getUserID(),
+          Resources.getUserPlatform().convertBoolean(user.isGuest()),
+          user.getUserID());
+      LOG.debug("Trying to insert user with SQL: " + sql);
+      int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
+      LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
+      return null;
+    }, EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -137,17 +150,18 @@ public class UserDataFactory {
       " where user_id = ?";
 
   public String readPreferences(long userId) {
-    return new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(READ_PREFS_SQL),
-        "read-prefs"
-    ).executeQuery(
-        new Object[]{ userId },
-        new Integer[]{ Types.BIGINT },
-        rs -> rs.next()
-          ? Resources.getUserPlatform().getClobData(rs, "preferences")
-          : "{}"
-    );
+    return mapException(() ->
+      new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(READ_PREFS_SQL),
+          "read-prefs"
+      ).executeQuery(
+          new Object[]{ userId },
+          new Integer[]{ Types.BIGINT },
+          rs -> rs.next()
+            ? Resources.getUserPlatform().getClobData(rs, "preferences")
+            : "{}"
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -160,14 +174,15 @@ public class UserDataFactory {
       " where user_id = ?";
 
   public void writePreferences(long userId, String prefsObject) {
-    new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(WRITE_PREFS_SQL),
-        "write-prefs"
-    ).executeStatement(
-        new Object[]{ prefsObject, userId },
-        new Integer[]{ Types.CLOB, Types.BIGINT }
-    );
+    mapException(() ->
+      new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(WRITE_PREFS_SQL),
+          "write-prefs"
+      ).executeStatement(
+          new Object[]{prefsObject, userId},
+          new Integer[]{Types.CLOB, Types.BIGINT}
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -181,23 +196,24 @@ public class UserDataFactory {
       " order by " + COL_MODIFICATION_TIME + " desc";
 
   public List<AnalysisSummary> getAnalysisSummaries(long userId) {
-    return new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(GET_ANALYSES_BY_USER_SQL),
-        "analysis-summaries"
-    ).executeQuery(
-        new Object[]{ userId },
-        new Integer[]{ Types.BIGINT },
-        rs -> {
-          List<AnalysisSummary> list = new ArrayList<>();
-          while (rs.next()) {
-            AnalysisSummary sum = new AnalysisSummaryImpl();
-            populateSummaryFields(sum, rs);
-            list.add(sum);
+    return mapException(() ->
+      new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(GET_ANALYSES_BY_USER_SQL),
+          "analysis-summaries"
+      ).executeQuery(
+          new Object[]{ userId },
+          new Integer[]{ Types.BIGINT },
+          rs -> {
+            List<AnalysisSummary> list = new ArrayList<>();
+            while (rs.next()) {
+              AnalysisSummary sum = new AnalysisSummaryImpl();
+              populateSummaryFields(sum, rs);
+              list.add(sum);
+            }
+            return list;
           }
-          return list;
-        }
-    );
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -210,8 +226,8 @@ public class UserDataFactory {
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public AnalysisDetailWithUser getAnalysisById(String analysisId) {
-    try {
-      return new SQLRunner(
+    return mapException(() ->
+      new SQLRunner(
           Resources.getUserDataSource(),
           addSchema(GET_ANALYSIS_BY_ID_SQL),
           "analysis-detail"
@@ -228,12 +244,7 @@ public class UserDataFactory {
             }
             return analysis;
           }
-      );
-    }
-    catch (SQLRunnerException e) {
-      // throw underlying exception if able
-      throw e.getCause() != null && e.getCause() instanceof RuntimeException ? (RuntimeException)e.getCause() : e;
-    }
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -248,14 +259,14 @@ public class UserDataFactory {
       " ) ";
 
   public void insertAnalysis(AnalysisDetailWithUser analysis) {
-    new SQLRunner(
+    mapException(() -> new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(INSERT_ANALYSIS_SQL),
         "insert-analysis"
     ).executeStatement(
         getAnalysisInsertValues(analysis),
         DETAIL_COL_TYPES
-    );
+    ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -268,24 +279,26 @@ public class UserDataFactory {
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public void updateAnalysis(AnalysisDetailWithUser analysis) {
-    int rowsUpdated = new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(UPDATE_ANALYSIS_SQL),
-        "update-analysis"
-    ).executeUpdate(
-        ArrayUtil.concatenate(
-            getAnalysisInsertValues(analysis),
-            new Object[] { analysis.getAnalysisId() } // extra ? for analysis_id in where statement
-        ),
-        ArrayUtil.concatenate(
-            DETAIL_COL_TYPES,
-            new Integer[] { Types.VARCHAR } // extra ? for analysis_id in where statement
-        )
-    );
-    if (rowsUpdated != 1) {
-      throw new IllegalStateException("Updated " + rowsUpdated +
-          " rows (should be 1) in DB when updated analysis with ID " + analysis.getAnalysisId());
-    }
+    mapException(() -> {
+      int rowsUpdated = new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(UPDATE_ANALYSIS_SQL),
+          "update-analysis"
+      ).executeUpdate(
+          ArrayUtil.concatenate(
+              getAnalysisInsertValues(analysis),
+              new Object[]{analysis.getAnalysisId()} // extra ? for analysis_id in where statement
+          ),
+          ArrayUtil.concatenate(
+              DETAIL_COL_TYPES,
+              new Integer[]{Types.VARCHAR} // extra ? for analysis_id in where statement
+          )
+      );
+      if (rowsUpdated != 1) {
+        throw new IllegalStateException("Updated " + rowsUpdated +
+            " rows (should be 1) in DB when updated analysis with ID " + analysis.getAnalysisId());
+      }
+    }, EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -308,13 +321,14 @@ public class UserDataFactory {
     Arrays.fill(stringArr, "?");
     String sql = DELETE_ANALYSES_SQL.replace(IDS_MACRO_LIST_MACRO, String.join(", ", stringArr));
 
-    new SQLRunner(
+    mapException(() ->
+      new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(sql),
         "delete-analyses"
-    ).executeStatement(
+      ).executeStatement(
         idsToDelete
-    );
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -328,22 +342,23 @@ public class UserDataFactory {
       " order by " + COL_MODIFICATION_TIME + " desc";
 
   public List<AnalysisSummaryWithUser> getPublicAnalyses() {
-    return new SQLRunner(
-        Resources.getUserDataSource(),
-        addSchema(GET_PUBLIC_ANALYSES_SQL),
-        "public-analysis-summaries"
-    ).executeQuery(
-        rs -> {
-          List<AnalysisSummaryWithUser> list = new ArrayList<>();
-          while (rs.next()) {
-            AnalysisSummaryWithUser sum = new AnalysisSummaryWithUserImpl();
-            sum.setUserId(rs.getLong(COL_USER_ID));
-            populateSummaryFields(sum, rs);
-            list.add(sum);
+    return mapException(() ->
+        new SQLRunner(
+          Resources.getUserDataSource(),
+          addSchema(GET_PUBLIC_ANALYSES_SQL),
+          "public-analysis-summaries"
+        ).executeQuery(
+          rs -> {
+            List<AnalysisSummaryWithUser> list = new ArrayList<>();
+            while (rs.next()) {
+              AnalysisSummaryWithUser sum = new AnalysisSummaryWithUserImpl();
+              sum.setUserId(rs.getLong(COL_USER_ID));
+              populateSummaryFields(sum, rs);
+              list.add(sum);
+            }
+            return list;
           }
-          return list;
-        }
-    );
+        ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
@@ -362,42 +377,47 @@ public class UserDataFactory {
       " )";
 
   public void transferGuestAnalysesOwnership(long fromGuestUserId, long toRegisteredUserId) {
-    new SQLRunner(
+    mapException(() ->
+      new SQLRunner(
         Resources.getUserDataSource(),
         addSchema(TRANSFER_GUEST_ANALYSES_SQL),
         "transfer-analyses"
-    ).executeStatement(
+      ).executeStatement(
         new Object[]{ toRegisteredUserId, fromGuestUserId }
-    );
+      ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
    *** Read analysis metrics
    **************************************************************************************/
+
   public enum Imported {
     YES, NO
   }
+
   public enum IsGuest {
     YES(1), NO(0);
     private final int flag;
     IsGuest(int flag) { this.flag = flag;}
   }
+
   public List<String> getIgnoreInMetricsUserIds() {
     String sql = """
-            select user_id from useraccounts.account_properties
-            where key = 'ignore_in_metrics' and value = 'true'
-            """;
-    return new SQLRunner(
+      select user_id from useraccounts.account_properties
+      where key = 'ignore_in_metrics' and value = 'true'
+    """;
+    return mapException(() ->
+        new SQLRunner(
             Resources.getAccountsDataSource(),
             sql,
             "get-ignore-in-metrics-user-ids"
-    ).executeQuery(
+        ).executeQuery(
             rs -> {
               List<String> userIds = new ArrayList<>();
               while (rs.next()) userIds.add(Integer.toString(rs.getInt("USER_ID")));
               return userIds;
             }
-    );
+        ), EXCEPTION_HANDLER);
   }
 
   static private String getStudyTypeSql(MetricsUserProjectIdAnalysesGetStudyType studyType) {
@@ -423,11 +443,12 @@ order by cnt desc
     String importClause = imported == Imported.YES ? "and provenance is not null" + System.lineSeparator() : "";
     String sql = String.format(sqlTemplate, _userSchema, _userSchema, dateColumn, dateColumn, getStudyTypeSql(studyType), ignoreUserIds, importClause);
 
-    return new SQLRunner(
+    return mapException(() ->
+        new SQLRunner(
             Resources.getUserDataSource(),
             sql,
             "read-analysis-counts"
-    ).executeQuery(
+        ).executeQuery(
             new Object[]{ java.sql.Date.valueOf(startDate), java.sql.Date.valueOf(endDate) },
             new Integer[]{ Types.DATE, Types.DATE },
             rs -> {
@@ -442,7 +463,7 @@ order by cnt desc
               }
               return countPerStudy;
             }
-    );
+        ), EXCEPTION_HANDLER);
   }
 
   // collect a histogram of counts of number of users with a number of some object (eg analyses or filters) from the analysis table.
@@ -467,11 +488,12 @@ order by cnt desc
     String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema,
             dateColumn, dateColumn, getStudyTypeSql(studyType), ignoreIdsString);
 
-    return new SQLRunner(
+    return mapException(() ->
+        new SQLRunner(
             Resources.getUserDataSource(),
             sql,
             "read-user-object-counts"
-    ).executeQuery(
+        ).executeQuery(
             new Object[]{ java.sql.Date.valueOf(startDate), java.sql.Date.valueOf(endDate), isGuest.flag },
             new Integer[]{ Types.DATE, Types.DATE, Types.INTEGER },
             rs -> {
@@ -486,7 +508,7 @@ order by cnt desc
               }
               return counts;
             }
-    );
+        ), EXCEPTION_HANDLER);
   }
 
   /***************************************************************************************
