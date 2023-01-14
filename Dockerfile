@@ -31,7 +31,7 @@ RUN bash -c 'echo "\n\n" | ./gradlew init --type basic --dsl kotlin --no-daemon'
 COPY build.gradle.kts settings.gradle.kts ./
 
 # download raml tools (these never change)
-RUN ./gradlew install-raml-merge install-raml-4-jax-rs
+RUN ./gradlew install-raml-4-jax-rs install-raml-merge
 
 # download project dependencies in advance
 RUN ./gradlew download-dependencies
