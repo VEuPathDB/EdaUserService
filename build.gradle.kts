@@ -27,10 +27,10 @@ containerBuild {
     version = "3.0.0"
 
     // Project Root Package
-    projectPackage = "org.veupathdb.service.eda.us"
+    projectPackage = "org.veupathdb.service.eda"
 
     // Main Class Name
-    mainClassName = "Main"
+    mainClassName = "us.Main"
 
   }
 
