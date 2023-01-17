@@ -32,20 +32,20 @@ public class MetricsService implements MetricsUserProjectIdAnalyses {
         response.setStartDate(Date.from(startDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
         List<String> ignoreInMetricsUserIds = udf.getIgnoreInMetricsUserIds();
         String ignoreIdsString = String.join(", ", ignoreInMetricsUserIds);
-        response.setCreationCounts(getAnalysisCountsPerDateType(udf, studyType, startDate, endDate,"creation_time", ignoreIdsString));
-        response.setModifiedCounts(getAnalysisCountsPerDateType(udf, studyType, startDate, endDate, "modification_time", ignoreIdsString));
+        response.setCreationCounts(getAnalysisCountsPerDateType(udf, studyType, startDate, endDate, UserDataFactory.DateColumn.CREATION, ignoreIdsString));
+        response.setModifiedAfterCreationCounts(getAnalysisCountsPerDateType(udf, studyType, startDate, endDate, UserDataFactory.DateColumn.MODIFICATION, ignoreIdsString));
         return response;
     }
 
-    UserAnalysisCounts getAnalysisCountsPerDateType(UserDataFactory udf, MetricsUserProjectIdAnalysesGetStudyType studyType, LocalDate startDate, LocalDate endDate, String dateTypeColumn, String ignoreUserIds) {
+    UserAnalysisCounts getAnalysisCountsPerDateType(UserDataFactory udf, MetricsUserProjectIdAnalysesGetStudyType studyType, LocalDate startDate, LocalDate endDate, UserDataFactory.DateColumn dateTypeColumn, String ignoreUserIds) {
 
         UserAnalysisCounts counts = new UserAnalysisCountsImpl();
 
         // All analyses in this time period
         List<StudyCount> allAnalyses =  udf.readAnalysisCountsByStudy(studyType, startDate, endDate, dateTypeColumn, ignoreUserIds, UserDataFactory.Imported.NO);
-        counts.setAnalysesCountPerStudy(allAnalyses);
+        counts.setAnalysesPerStudy(allAnalyses);
         int allCount = allAnalyses.stream().map(StudyCount::getCount).reduce(0, Integer::sum);
-        counts.setAllAnalysesCount(allCount);
+        counts.setAnalysesCount(allCount);
 
         // Imported analyses in this time period
         List<StudyCount> importedAnalyses =  udf.readAnalysisCountsByStudy(studyType, startDate, endDate, dateTypeColumn, ignoreUserIds, UserDataFactory.Imported.YES);
