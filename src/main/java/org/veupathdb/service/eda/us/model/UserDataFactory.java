@@ -395,6 +395,17 @@ public class UserDataFactory {
     YES, NO
   }
 
+  public enum DateColumn {
+    CREATION("creation_time", ""),
+    MODIFICATION("modification_time", " AND modification_time != creation_time ");
+    private final String label;
+    private final String andClause;
+    DateColumn(String label, String andClause) {
+      this.label = label;
+      this.andClause = andClause;
+    }
+  }
+
   public enum IsGuest {
     YES(1), NO(0);
     private final int flag;
@@ -428,11 +439,11 @@ public class UserDataFactory {
     };
   }
 
-  public List<StudyCount> readAnalysisCountsByStudy(MetricsUserProjectIdAnalysesGetStudyType studyType, LocalDate startDate, LocalDate endDate, String dateColumn, String ignoreUserIds, Imported imported) {
+  public List<StudyCount> readAnalysisCountsByStudy(MetricsUserProjectIdAnalysesGetStudyType studyType, LocalDate startDate, LocalDate endDate, DateColumn dateColumn, String ignoreUserIds, Imported imported) {
     String sqlTemplate = """
 select count(analysis_id) as cnt, study_id
 from %sanalysis a, %susers u
-where %s > ? and %s <= ?
+where %s > ? and %s <= ? %s
 and a.user_id = u.user_id
 and study_id %s
 and a.user_id NOT IN (%s)
@@ -441,7 +452,8 @@ group by study_id
 order by cnt desc
         """;
     String importClause = imported == Imported.YES ? "and provenance is not null" + System.lineSeparator() : "";
-    String sql = String.format(sqlTemplate, _userSchema, _userSchema, dateColumn, dateColumn, getStudyTypeSql(studyType), ignoreUserIds, importClause);
+    String sql = String.format(sqlTemplate, _userSchema, _userSchema, dateColumn.label, dateColumn.label, dateColumn.andClause,
+            getStudyTypeSql(studyType), ignoreUserIds, importClause);
 
     return mapException(() ->
         new SQLRunner(
@@ -468,13 +480,13 @@ order by cnt desc
 
   // collect a histogram of counts of number of users with a number of some object (eg analyses or filters) from the analysis table.
   // the objects are aggregated by the aggregateObjectsSql.  EG:  "count(analysis_id)" or "sum(num_filters)"
-  public List<UsersObjectsCount> readObjectCountsByUserCounts(MetricsUserProjectIdAnalysesGetStudyType studyType, String aggregateObjectSql, LocalDate startDate, LocalDate endDate, String dateColumn, String ignoreIdsString, IsGuest isGuest) {
+  public List<UsersObjectsCount> readObjectCountsByUserCounts(MetricsUserProjectIdAnalysesGetStudyType studyType, String aggregateObjectSql, LocalDate startDate, LocalDate endDate, DateColumn dateColumn, String ignoreIdsString, IsGuest isGuest) {
     String sqlTemplate = """
   select count(user_id) as user_cnt, objects
   from (
     select %s as objects, a.user_id
     from %sanalysis a, %susers u
-    where %s > ? and %s <= ?
+    where %s > ? and %s <= ? %s
     and a.user_id = u.user_id
     and study_id %s
     and a.user_id NOT IN (%s)
@@ -486,7 +498,7 @@ order by cnt desc
   """;
 
     String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema,
-            dateColumn, dateColumn, getStudyTypeSql(studyType), ignoreIdsString);
+            dateColumn.label, dateColumn.label, dateColumn.andClause, getStudyTypeSql(studyType), ignoreIdsString);
 
     return mapException(() ->
         new SQLRunner(
