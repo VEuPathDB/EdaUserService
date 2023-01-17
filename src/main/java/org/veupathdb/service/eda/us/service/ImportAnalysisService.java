@@ -79,7 +79,7 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
         Resources.DATASET_ACCESS_SERVICE_URL,
         UserProvider.getSubmittedAuth(request).orElseThrow() // should already have been authenticated
     ).getStudyAccess(oldAnalysis.getStudyId());
-    if (!access.allowVisualizations()) {
+    if (!access.allowSubsetting()) {
       throw new ForbiddenException(new JSONObject()
           .put("message", "The requesting user does not have acccess to this study.")
           .put("studyId", oldAnalysis.getStudyId())
