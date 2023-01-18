@@ -47,16 +47,6 @@ containerBuild {
     imageName = "eda-user"
 
   }
-
-  generateJaxRS {
-    // List of custom arguments to use in the jax-rs code generation command
-    // execution.
-    arguments = listOf(/*arg1, arg2, arg3*/)
-
-    // Map of custom environment variables to set for the jax-rs code generation
-    // command execution.
-    environment = mapOf(/*Pair("env-key", "env-val"), Pair("env-key", "env-val")*/)
-  }
 }
 
 java {
