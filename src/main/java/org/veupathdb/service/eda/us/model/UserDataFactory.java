@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.SQLRunner;
+import org.gusdb.fgputil.functional.FunctionalInterfaces.SupplierWithException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
@@ -136,7 +137,6 @@ public class UserDataFactory {
       LOG.debug("Trying to insert user with SQL: " + sql);
       int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
       LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
-      return null;
     }, EXCEPTION_HANDLER);
   }
 
@@ -226,25 +226,27 @@ public class UserDataFactory {
       " where " + COL_ANALYSIS_ID + " = ?";
 
   public AnalysisDetailWithUser getAnalysisById(String analysisId) {
-    return mapException(() ->
+    // must declare the type here; Java not smart enough yet if we substitute it below
+    SupplierWithException<Optional<AnalysisDetailWithUser>> getter = () ->
       new SQLRunner(
-          Resources.getUserDataSource(),
-          addSchema(GET_ANALYSIS_BY_ID_SQL),
-          "analysis-detail"
+        Resources.getUserDataSource(),
+        addSchema(GET_ANALYSIS_BY_ID_SQL),
+        "analysis-detail"
       ).executeQuery(
-          new Object[]{ analysisId },
-          new Integer[]{ Types.VARCHAR },
-          rs -> {
-            if (!rs.next()) {
-              throw new NotFoundException();
-            }
-            AnalysisDetailWithUser analysis = new AnalysisDetailWithUser(rs);
-            if (rs.next()) {
-              throw new IllegalStateException("More than one analysis found with ID: " + analysisId);
-            }
-            return analysis;
+        new Object[]{ analysisId },
+        new Integer[]{ Types.VARCHAR },
+        rs -> {
+          if (!rs.next()) {
+            return Optional.empty();
           }
-      ), EXCEPTION_HANDLER);
+          AnalysisDetailWithUser analysis = new AnalysisDetailWithUser(rs);
+          if (rs.next()) {
+            throw new IllegalStateException("More than one analysis found with ID: " + analysisId);
+          }
+          return Optional.of(analysis);
+        }
+      );
+    return mapException(getter, EXCEPTION_HANDLER).orElseThrow(NotFoundException::new);
   }
 
   /***************************************************************************************
