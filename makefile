@@ -2,10 +2,6 @@ C_BLUE := "\\033[94m"
 C_NONE := "\\033[0m"
 C_CYAN := "\\033[36m"
 
-#
-# Meta Targets
-#
-
 .PHONY: default
 default:
 	@echo "Please choose one of:"
