@@ -57,7 +57,6 @@ containerBuild {
     // command execution.
     environment = mapOf(/*Pair("env-key", "env-val"), Pair("env-key", "env-val")*/)
   }
-
 }
 
 java {
@@ -125,7 +124,6 @@ tasks.named("merge-raml") {
   }
 }
 
-
 // ensures changing modules are never cached
 configurations.all {
   resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
@@ -163,11 +161,11 @@ dependencies {
   implementation("com.devskiller.friendly-id:friendly-id:1.1.0")
 
   // Unit Testing
-  testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
-  testImplementation("org.mockito:mockito-core:4.8.0")
-  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+  testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
+  testImplementation("org.mockito:mockito-core:4.11.0")
+  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 
-  // Stub database (temporary?)
+  // Stub database
   implementation("org.hsqldb:hsqldb:2.7.1")
 }
 
