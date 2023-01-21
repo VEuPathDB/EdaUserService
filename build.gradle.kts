@@ -4,7 +4,7 @@ import java.net.URL
 
 plugins {
   java
-  id("org.veupathdb.lib.gradle.container.container-utils") version "4.7.1"
+  id("org.veupathdb.lib.gradle.container.container-utils") version "4.8.2"
   id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
@@ -47,17 +47,6 @@ containerBuild {
     imageName = "eda-user"
 
   }
-
-  generateJaxRS {
-    // List of custom arguments to use in the jax-rs code generation command
-    // execution.
-    arguments = listOf(/*arg1, arg2, arg3*/)
-
-    // Map of custom environment variables to set for the jax-rs code generation
-    // command execution.
-    environment = mapOf(/*Pair("env-key", "env-val"), Pair("env-key", "env-val")*/)
-  }
-
 }
 
 java {
@@ -90,7 +79,7 @@ repositories {
 
 // versions
 val coreLib       = "6.13.2"         // Container core lib version
-val edaCommon     = "10.2.2"         // EDA Common version
+val edaCommon     = "10.3.1"         // EDA Common version
 val fgputil       = "2.12.0-jakarta" // FgpUtil version
 
 // use local EdaCommon compiled schema if project exists, else use released version;
@@ -125,10 +114,12 @@ tasks.named("merge-raml") {
   }
 }
 
-
-// ensures changing modules are never cached
+// ensures changing and dynamic modules are never cached
 configurations.all {
-  resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
+  resolutionStrategy {
+    cacheChangingModulesFor(0, TimeUnit.SECONDS)
+    cacheDynamicVersionsFor(0, TimeUnit.SECONDS)
+  }
 }
 
 dependencies {
@@ -163,11 +154,11 @@ dependencies {
   implementation("com.devskiller.friendly-id:friendly-id:1.1.0")
 
   // Unit Testing
-  testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
-  testImplementation("org.mockito:mockito-core:4.8.0")
-  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+  testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
+  testImplementation("org.mockito:mockito-core:4.11.0")
+  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 
-  // Stub database (temporary?)
+  // Stub database
   implementation("org.hsqldb:hsqldb:2.7.1")
 }
 

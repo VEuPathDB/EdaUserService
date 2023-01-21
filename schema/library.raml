@@ -680,14 +680,14 @@ types:
       startDate: date-only
       endDate: date-only
       creationCounts: UserAnalysisCounts
-      modifiedCounts: UserAnalysisCounts
+      modifiedAfterCreationCounts: UserAnalysisCounts
   UserAnalysisCounts:
     type: object
     additionalProperties: false
     properties:
-      allAnalysesCount: integer
+      analysesCount: integer
       importedAnalysesCount: integer
-      analysesCountPerStudy: StudyCount[]
+      analysesPerStudy: StudyCount[]
       importedAnalysesPerStudy: StudyCount[]
       registeredUsersCount: integer
       guestUsersCount: integer
