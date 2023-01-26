@@ -16,7 +16,6 @@ import org.gusdb.fgputil.FormatUtil;
 import org.gusdb.fgputil.json.JsonUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.providers.UserProvider;
-import org.veupathdb.service.eda.generated.model.AnalysisSummary;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
@@ -34,10 +33,6 @@ public class Utils {
       throw new ForbiddenException();
     }
     return activeUser;
-  }
-
-  public static <T, E extends RuntimeException> T doThrow(E exception) {
-    throw exception;
   }
 
   public static String getCurrentDateTimeString() {

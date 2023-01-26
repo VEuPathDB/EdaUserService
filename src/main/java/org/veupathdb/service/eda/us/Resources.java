@@ -20,6 +20,7 @@ import org.veupathdb.service.eda.us.service.UserService;
 import javax.sql.DataSource;
 
 import static org.gusdb.fgputil.runtime.Environment.getOptionalVar;
+import static org.gusdb.fgputil.runtime.Environment.getRequiredVar;
 import static org.gusdb.fgputil.runtime.ProjectSpecificProperties.PropertySpec.required;
 
 /**
@@ -33,7 +34,9 @@ public class Resources extends ContainerResources {
   private static final Logger LOG = LogManager.getLogger(Resources.class);
 
   private static final boolean DEVELOPMENT_MODE =
-      Boolean.valueOf(getOptionalVar("DEVELOPMENT_MODE", "true"));
+      Boolean.parseBoolean(getOptionalVar("DEVELOPMENT_MODE", "true"));
+
+  public static final String DATASET_ACCESS_SERVICE_URL = getRequiredVar("DATASET_ACCESS_SERVICE_URL");
 
   private static final String USER_SCHEMA_PROP = "USER_SCHEMA";
   private static Map<String,String> SCHEMA_MAP;
