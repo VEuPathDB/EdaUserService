@@ -397,8 +397,10 @@ public class UserDataFactory {
     YES, NO
   }
 
+  // this enum supports different ways to define a date range.  at this point only one is in use.  we can simplify at some point.
   public enum DateColumn {
     CREATION("creation_time", ""),
+    CREATION_OR_MODIFICATION("modification_time", ""),
     MODIFICATION("modification_time", " AND modification_time != creation_time ");
     private final String label;
     private final String andClause;

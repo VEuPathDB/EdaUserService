@@ -32,8 +32,7 @@ public class MetricsService implements MetricsUserProjectIdAnalyses {
         response.setStartDate(Date.from(startDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
         List<String> ignoreInMetricsUserIds = udf.getIgnoreInMetricsUserIds();
         String ignoreIdsString = String.join(", ", ignoreInMetricsUserIds);
-        response.setCreationCounts(getAnalysisCountsPerDateType(udf, studyType, startDate, endDate, UserDataFactory.DateColumn.CREATION, ignoreIdsString));
-        response.setModifiedAfterCreationCounts(getAnalysisCountsPerDateType(udf, studyType, startDate, endDate, UserDataFactory.DateColumn.MODIFICATION, ignoreIdsString));
+        response.setCreatedOrModifiedCounts(getAnalysisCountsPerDateType(udf, studyType, startDate, endDate, UserDataFactory.DateColumn.CREATION_OR_MODIFICATION, ignoreIdsString));
         return response;
     }
 
