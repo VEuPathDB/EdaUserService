@@ -81,7 +81,7 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
     ).getStudyAccess(oldAnalysis.getStudyId());
     if (!access.allowSubsetting()) {
       throw new ForbiddenException(new JSONObject()
-          .put("message", "The requesting user does not have acccess to this study.")
+          .put("message", "The requesting user does not have access to this study.")
           .put("studyId", oldAnalysis.getStudyId())
           .toString()
       );
