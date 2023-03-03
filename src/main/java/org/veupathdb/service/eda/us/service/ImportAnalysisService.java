@@ -85,6 +85,7 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
             .put("denialReason", "noAccess")
             .put("message", "The requesting user does not have access to this study.")
             .put("datasetId", oldAnalysis.getStudyId())
+            .put("isUserDataset", info.isUserStudy())
             .toString()
         );
       }
