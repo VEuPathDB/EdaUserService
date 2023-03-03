@@ -75,16 +75,27 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
     }).orElse(oldAnalysis.getUserId());
 
     // make sure user importing has access to this analysis' study
-    StudyAccess access = new DatasetAccessClient(
-        Resources.DATASET_ACCESS_SERVICE_URL,
-        UserProvider.getSubmittedAuth(request).orElseThrow() // should already have been authenticated
-    ).getStudyAccess(oldAnalysis.getStudyId());
-    if (!access.allowSubsetting()) {
+    try {
+      DatasetAccessClient.BasicStudyDatasetInfo info = new DatasetAccessClient(
+          Resources.DATASET_ACCESS_SERVICE_URL,
+          UserProvider.getSubmittedAuth(request).orElseThrow() // should already have been authenticated
+      ).getStudyDatasetInfo(oldAnalysis.getStudyId());
+      if (!info.getStudyAccess().allowSubsetting()) {
+        throw new ForbiddenException(new JSONObject()
+            .put("denialReason", "noAccess")
+            .put("message", "The requesting user does not have access to this study.")
+            .put("datasetId", oldAnalysis.getStudyId())
+            .toString()
+        );
+      }
+    }
+    catch (NotFoundException e) {
+      // per https://github.com/VEuPathDB/EdaUserService/issues/24 if dataset under the study does not exist, throw Forbidden
       throw new ForbiddenException(new JSONObject()
-          .put("message", "The requesting user does not have access to this study.")
-          .put("studyId", oldAnalysis.getStudyId())
-          .toString()
-      );
+          .put("denialReason", "missingDataset")
+          .put("message", "This analysis cannot be imported because the underlying dataset '" + oldAnalysis.getStudyId() + "' no longer exists.")
+          .put("datasetId", oldAnalysis.getStudyId())
+          .toString());
     }
 
     // make a copy of the analysis, assign a new owner, check display name (must be unique) and insert
