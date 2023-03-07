@@ -79,7 +79,10 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
       DatasetAccessClient.BasicStudyDatasetInfo info = new DatasetAccessClient(
           Resources.DATASET_ACCESS_SERVICE_URL,
           UserProvider.getSubmittedAuth(request).orElseThrow() // should already have been authenticated
-      ).getStudyDatasetInfo(oldAnalysis.getStudyId());
+      )
+      // NOTE: even though we're calling getStudyId(), this method currently returns a dataset ID!!
+      .getStudyPermsByDatasetId(oldAnalysis.getStudyId());
+
       if (!info.getStudyAccess().allowSubsetting()) {
         throw new ForbiddenException(new JSONObject()
             .put("denialReason", "noAccess")
