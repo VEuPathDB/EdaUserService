@@ -152,6 +152,7 @@ dependencies {
   // Utils
   implementation("io.vulpine.lib:Jackfish:1.1.0")
   implementation("com.devskiller.friendly-id:friendly-id:1.1.0")
+  implementation("org.kamranzafar:jtar:2.2")
 
   // Unit Testing
   testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")

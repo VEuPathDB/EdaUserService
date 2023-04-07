@@ -1,6 +1,8 @@
 package org.veupathdb.service.eda.us;
 
 import java.util.Map;
+import java.util.Optional;
+
 import jakarta.ws.rs.NotFoundException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -83,6 +85,10 @@ public class Resources extends ContainerResources {
 
   public static DBPlatform getUserPlatform() {
     return new Oracle();
+  }
+
+  public static String getMetricsReportSchema() {
+    return Optional.ofNullable(System.getenv("USAGE_METRICS_SCHEMA")).orElse("usagemetrics.");
   }
 
   /**

@@ -3,12 +3,19 @@ package org.veupathdb.service.eda.us.service;
 import jakarta.ws.rs.BadRequestException;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.generated.resources.MetricsUserProjectIdAnalyses;
+import org.veupathdb.service.eda.generated.resources.MetricsUserProjectIdReports;
+import org.veupathdb.service.eda.us.model.TabularDataWriter;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
+
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class MetricsService implements MetricsUserProjectIdAnalyses {
 
@@ -25,6 +32,34 @@ public class MetricsService implements MetricsUserProjectIdAnalyses {
             throw new BadRequestException("Can't parse startDate '" + startDate + "' or endDate '" + endDate + "'. Correct format is: YYYY-MM-DD", e);
         }
     }
+
+    @Override
+    public GetMetricsUserAnalysesReportsByProjectIdResponse getMetricsUserAnalysesReportsByProjectId(String projectId, String reportMonth) {
+        String[] yearMonthParts = reportMonth.split("-");
+        int year = Integer.parseInt(yearMonthParts[0]);
+        int month = Integer.parseInt(yearMonthParts[1]);
+        UserDataFactory userDataFactory = new UserDataFactory(projectId);
+        MetricsReportResponseStream streamResponse = new MetricsReportResponseStream(outputStream -> {
+            try {
+                final ZipOutputStream zipOutput = new ZipOutputStream(outputStream);
+                TabularDataWriter formatter = new TabularDataWriter.TsvFormatter(zipOutput);
+                zipOutput.putNextEntry(new ZipEntry("analysis-histogram"));
+                userDataFactory.streamAnalysisHistogram(year, month, formatter);
+                zipOutput.putNextEntry(new ZipEntry("analysis-totals"));
+                userDataFactory.streamAggregateUserStats(year, month, formatter);
+                zipOutput.putNextEntry(new ZipEntry("analysis-study-metrics"));
+                userDataFactory.streamPerStudyAnalysisMetrics(year, month, formatter);
+                zipOutput.putNextEntry(new ZipEntry("download-study-metrics"));
+                userDataFactory.streamDownloadReport(year, month, formatter);
+                zipOutput.closeEntry();
+                zipOutput.close();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to put zip entry in output.", e);
+            }
+        });
+        return GetMetricsUserAnalysesReportsByProjectIdResponse.respond200WithApplicationZip(streamResponse);
+    }
+
     public UserAnalysisMetricsResponse readAnalysisMetrics(UserDataFactory udf, MetricsUserProjectIdAnalysesGetStudyType studyType, LocalDate startDate, LocalDate endDate) {
 
         UserAnalysisMetricsResponseImpl response = new UserAnalysisMetricsResponseImpl();
@@ -86,5 +121,4 @@ public class MetricsService implements MetricsUserProjectIdAnalyses {
 
         return counts;
     }
-
 }

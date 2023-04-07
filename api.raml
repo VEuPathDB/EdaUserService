@@ -73,7 +73,20 @@ securitySchemes:
         body:
           application/json:
             type: lib.UserAnalysisMetricsResponse
-      
+
+  /reports:
+    displayName: Get usage metrics for EDA users by time period
+    get:
+      queryParameters:
+        reportMonth:
+          description: optional report month (yyyy-mm)
+          type: string
+      responses:
+        200:
+          body:
+            application/zip:
+              type: lib.MetricsReportResponse
+
 /users/{user-id}:
 
   /preferences/{project-id}:
