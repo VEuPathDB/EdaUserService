@@ -75,11 +75,11 @@ securitySchemes:
             type: lib.UserAnalysisMetricsResponse
 
   /reports:
-    displayName: Get usage metrics for EDA users by time period
+    displayName: Download usage metric reports for a given month
     get:
       queryParameters:
         reportMonth:
-          description: optional report month (yyyy-mm)
+          description: Required report month (yyyy-mm)
           type: string
       responses:
         200:

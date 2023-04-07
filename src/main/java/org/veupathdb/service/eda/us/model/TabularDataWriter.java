@@ -2,9 +2,11 @@ package org.veupathdb.service.eda.us.model;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Defines an interface to write formatted columnar data.
+ */
 public interface TabularDataWriter {
 
   void write(String... column) throws IOException;
@@ -18,6 +20,10 @@ public interface TabularDataWriter {
     private boolean firstColumnInRow = true;
     private OutputStream outputStream;
 
+    /**
+     * Writes formatted TSV data to an output stream. Note that this takes an output stream instead of a writer for
+     * compatibility with writing to a ZipOutputStream.
+     */
     public TsvFormatter(OutputStream outputStream) {
       this.outputStream = outputStream;
     }
