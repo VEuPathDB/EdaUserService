@@ -556,7 +556,7 @@ public class UserDataFactory {
             sql,
             "read-analysis-study"
         ).executeQuery(
-            new Integer[]{ month, year },
+            new Object[]{ month, year },
             rs -> {
               while (rs.next()) {
                 try {

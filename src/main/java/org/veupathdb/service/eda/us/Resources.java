@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.FormatUtil;
 import org.gusdb.fgputil.db.platform.DBPlatform;
 import org.gusdb.fgputil.db.platform.Oracle;
+import org.gusdb.fgputil.runtime.Environment;
 import org.gusdb.fgputil.runtime.ProjectSpecificProperties;
 import org.gusdb.fgputil.runtime.ProjectSpecificProperties.PropertySpec;
 import org.veupathdb.lib.container.jaxrs.config.Options;
@@ -88,7 +89,7 @@ public class Resources extends ContainerResources {
   }
 
   public static String getMetricsReportSchema() {
-    return Optional.ofNullable(System.getenv("USAGE_METRICS_SCHEMA")).orElse("usagemetrics.");
+    return Environment.getOptionalVar("USAGE_METRICS_SCHEMA", "usagemetrics.");
   }
 
   /**
