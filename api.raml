@@ -73,7 +73,20 @@ securitySchemes:
         body:
           application/json:
             type: lib.UserAnalysisMetricsResponse
-      
+
+  /reports:
+    displayName: Download usage metric reports for a given month
+    get:
+      queryParameters:
+        reportMonth:
+          description: Required report month (yyyy-mm)
+          type: string
+      responses:
+        200:
+          body:
+            application/zip:
+              type: lib.MetricsReportResponse
+
 /users/{user-id}:
 
   /preferences/{project-id}:

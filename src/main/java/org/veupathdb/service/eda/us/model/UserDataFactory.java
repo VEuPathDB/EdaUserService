@@ -12,6 +12,7 @@ import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
 import org.veupathdb.service.eda.us.Utils;
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -100,9 +101,11 @@ public class UserDataFactory {
   };
 
   private final String _userSchema;
+  private final String _metricsReportsSchema;
 
   public UserDataFactory(String projectId) {
     _userSchema = Resources.getUserDbSchema(projectId);
+    _metricsReportsSchema = Resources.getMetricsReportSchema();
   }
 
   private String addSchema(String sqlConstant) {
@@ -445,16 +448,16 @@ public class UserDataFactory {
 
   public List<StudyCount> readAnalysisCountsByStudy(MetricsUserProjectIdAnalysesGetStudyType studyType, LocalDate startDate, LocalDate endDate, DateColumn dateColumn, String ignoreUserIds, Imported imported) {
     String sqlTemplate = """
-select count(analysis_id) as cnt, study_id
-from %sanalysis a, %susers u
-where %s > ? and %s <= ? %s
-and a.user_id = u.user_id
-and study_id %s
-and a.user_id NOT IN (%s)
-%s
-group by study_id
-order by cnt desc
-        """;
+        select count(analysis_id) as cnt, study_id
+        from %sanalysis a, %susers u
+        where %s > ? and %s <= ? %s
+        and a.user_id = u.user_id
+        and study_id %s
+        and a.user_id NOT IN (%s)
+        %s
+        group by study_id
+        order by cnt desc
+                """;
     String importClause = imported == Imported.YES ? "and provenance is not null" + System.lineSeparator() : "";
     String sql = String.format(sqlTemplate, _userSchema, _userSchema, dateColumn.label, dateColumn.label, dateColumn.andClause,
             getStudyTypeSql(studyType), ignoreUserIds, importClause);
@@ -486,20 +489,20 @@ order by cnt desc
   // the objects are aggregated by the aggregateObjectsSql.  EG:  "count(analysis_id)" or "sum(num_filters)"
   public List<UsersObjectsCount> readObjectCountsByUserCounts(MetricsUserProjectIdAnalysesGetStudyType studyType, String aggregateObjectSql, LocalDate startDate, LocalDate endDate, DateColumn dateColumn, String ignoreIdsString, IsGuest isGuest) {
     String sqlTemplate = """
-  select count(user_id) as user_cnt, objects
-  from (
-    select %s as objects, a.user_id
-    from %sanalysis a, %susers u
-    where %s > ? and %s <= ? %s
-    and a.user_id = u.user_id
-    and study_id %s
-    and a.user_id NOT IN (%s)
-    and is_guest = ?
-    group by a.user_id
-  )
-  group by objects
-  order by objects desc
-  """;
+        select count(user_id) as user_cnt, objects
+        from (
+          select %s as objects, a.user_id
+          from %sanalysis a, %susers u
+          where %s > ? and %s <= ? %s
+          and a.user_id = u.user_id
+          and study_id %s
+          and a.user_id NOT IN (%s)
+          and is_guest = ?
+          group by a.user_id
+        )
+        group by objects
+        order by objects desc
+        """;
 
     String sql = String.format(sqlTemplate, aggregateObjectSql, _userSchema, _userSchema,
             dateColumn.label, dateColumn.label, dateColumn.andClause, getStudyTypeSql(studyType), ignoreIdsString);
@@ -523,6 +526,203 @@ order by cnt desc
                 counts.add(uac);
               }
               return counts;
+            }
+        ), EXCEPTION_HANDLER);
+  }
+
+  public void streamPerStudyAnalysisMetrics(int year, int month, TabularDataWriter tabularFormatter) {
+    String sql = """
+        SELECT 
+          m.dataset_id, 
+          m.analysis_count,  
+          m.shares_count
+        FROM %sanalysismetricsperstudy m
+        JOIN (
+          SELECT MAX(report_id) report_id, report_month, report_year, MAX(report_time) FROM %sreports
+          GROUP BY report_id, report_month, report_year
+          HAVING report_month = ? AND report_year = ?
+        ) r 
+        ON r.report_id = m.report_id
+    """.formatted(_metricsReportsSchema, _metricsReportsSchema);
+    try {
+      tabularFormatter.write("dataset_id", "analysis_count", "shares_count");
+      tabularFormatter.nextRecord();
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to write headers.", e);
+    }
+    mapException(() ->
+        new SQLRunner(
+            Resources.getUserDataSource(),
+            sql,
+            "read-analysis-study"
+        ).executeQuery(
+            new Object[]{ month, year },
+            rs -> {
+              while (rs.next()) {
+                try {
+                  tabularFormatter.write(rs.getString("dataset_id"));
+                  tabularFormatter.write(Integer.toString(rs.getInt("analysis_count")));
+                  tabularFormatter.write(Integer.toString(rs.getInt("shares_count")));
+                  tabularFormatter.nextRecord();
+                } catch (IOException e) {
+                  throw new RuntimeException("Error while attempting to write to output stream.", e);
+                }
+              }
+              return null;
+            }
+        ), EXCEPTION_HANDLER);
+  }
+
+  public void streamAggregateUserStats(int year, int month, TabularDataWriter tabularFormatter) {
+    final String categoryCol = "user_category";
+    final String numUserCol = "num_users";
+    final String numFiltersCol = "num_filters";
+    final String numAnalysesCol = "num_analyses";
+    final String numVizCol = "num_visualizations";
+    String sql = """
+        SELECT 
+          s.%s, 
+          s.%s,  
+          s.%s,
+          s.%s,
+          s.%s
+        FROM %saggregateuserstats s
+        JOIN (
+          SELECT MAX(report_id) report_id, report_month, report_year, MAX(report_time) FROM %sreports
+          GROUP BY report_id, report_month, report_year
+          HAVING report_month = ? AND report_year = ?
+        ) r 
+        ON r.report_id = s.report_id
+        """.formatted(categoryCol, numUserCol, numFiltersCol, numAnalysesCol, numVizCol,
+        _metricsReportsSchema, _metricsReportsSchema);
+    try {
+      tabularFormatter.write(categoryCol, numUserCol, numFiltersCol, numAnalysesCol, numVizCol);
+      tabularFormatter.nextRecord();
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to write headers.", e);
+    }
+
+    mapException(() ->
+        new SQLRunner(
+            Resources.getUserDataSource(),
+            sql,
+            "read-analysis-totals"
+        ).executeQuery(
+            new Integer[]{ month, year },
+            rs -> {
+              while (rs.next()) {
+                try {
+                  tabularFormatter.write(rs.getString(categoryCol));
+                  tabularFormatter.write(Integer.toString(rs.getInt(numUserCol)));
+                  tabularFormatter.write(Integer.toString(rs.getInt(numFiltersCol)));
+                  tabularFormatter.write(Integer.toString(rs.getInt(numAnalysesCol)));
+                  tabularFormatter.write(Integer.toString(rs.getInt(numVizCol)));
+                  tabularFormatter.nextRecord();
+                } catch (IOException e) {
+                  throw new RuntimeException("Error while attempting to write to output stream.", e);
+                }
+              }
+              return null;
+            }
+        ), EXCEPTION_HANDLER);
+  }
+
+  public void streamDownloadReport(int year, int month, TabularDataWriter recordFormatter) {
+    final String studyIdCol = "study_id";
+    final String numUsersFullDownloadCol = "num_users_full_download";
+    final String numUsersSubsetDownloadCol = "num_users_subset_download";
+    String sql = """
+        SELECT 
+          d.%s, 
+          d.%s,  
+          d.%s
+        FROM %sdownloadsperstudy d
+        JOIN (
+          SELECT MAX(report_id) report_id, report_month, report_year, MAX(report_time) FROM %sreports
+          GROUP BY report_id, report_month, report_year
+          HAVING report_month = ? AND report_year = ?
+        ) r 
+        ON r.report_id = d.report_id
+    """.formatted(studyIdCol, numUsersFullDownloadCol, numUsersSubsetDownloadCol, _metricsReportsSchema, _metricsReportsSchema);
+
+    try {
+      recordFormatter.write(studyIdCol, numUsersFullDownloadCol, numUsersSubsetDownloadCol);
+      recordFormatter.nextRecord();
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to write headers.", e);
+    }
+
+    mapException(() ->
+        new SQLRunner(
+            Resources.getUserDataSource(),
+            sql,
+            "read-download-report"
+        ).executeQuery(
+            new Integer[]{ month, year },
+            rs -> {
+              while (rs.next()) {
+                try {
+                  recordFormatter.write(rs.getString("study_id"));
+                  recordFormatter.write(Integer.toString(rs.getInt("num_users_full_download")));
+                  recordFormatter.write(Integer.toString(rs.getInt("num_users_subset_download")));
+                  recordFormatter.nextRecord();
+                } catch (IOException e) {
+                  throw new RuntimeException("Error while attempting to write to output stream.", e);
+                }
+              }
+              return null;
+            }
+        ), EXCEPTION_HANDLER);
+  }
+
+  public void streamAnalysisHistogram(int year, int month, TabularDataWriter tabularFormatter) {
+    String sql = """
+        SELECT 
+          h.count_bucket, 
+          h.registered_users_analyses,  
+          h.guests_analyses,
+          h.registered_users_filters,
+          h.guests_filters,
+          h.registered_users_visualizations,
+          h.guest_users_visualizations
+        FROM %sanalysishistogram h
+        JOIN (
+          SELECT MAX(report_id) report_id, report_month, report_year, MAX(report_time) FROM %sreports
+          GROUP BY report_id, report_month, report_year
+          HAVING report_month = ? AND report_year = ?
+        ) r 
+        ON r.report_id = h.report_id
+    """.formatted(_metricsReportsSchema, _metricsReportsSchema);
+    try {
+      tabularFormatter.write("count_bucket", "registered_users_analyses", "guests_analyses",
+          "guests_filters", "registered_users_visualizations", "guest_user_visualizations");
+      tabularFormatter.nextRecord();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to write header rows", e);
+    }
+    mapException(() ->
+        new SQLRunner(
+            Resources.getUserDataSource(),
+            sql,
+            "read-analysis-histogram"
+        ).executeQuery(
+            new Integer[]{ month, year },
+            rs -> {
+              while (rs.next()) {
+                try {
+                  tabularFormatter.write(rs.getString("count_bucket"));
+                  tabularFormatter.write(Integer.toString(rs.getInt("registered_users_analyses")));
+                  tabularFormatter.write(Integer.toString(rs.getInt("guests_analyses")));
+                  tabularFormatter.write(Integer.toString(rs.getInt("registered_users_filters")));
+                  tabularFormatter.write(Integer.toString(rs.getInt("guests_filters")));
+                  tabularFormatter.write(Integer.toString(rs.getInt("registered_users_visualizations")));
+                  tabularFormatter.write(Integer.toString(rs.getInt("guest_users_visualizations")));
+                  tabularFormatter.nextRecord();
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              }
+              return null;
             }
         ), EXCEPTION_HANDLER);
   }
