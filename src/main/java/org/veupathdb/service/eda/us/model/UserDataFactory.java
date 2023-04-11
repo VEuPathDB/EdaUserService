@@ -539,7 +539,7 @@ public class UserDataFactory {
         FROM %sanalysismetricsperstudy m
         JOIN (
           SELECT MAX(report_id) report_id, report_month, report_year, MAX(report_time) FROM %sreports
-          GROUP BY report_id, report_month, report_year
+          GROUP BY report_month, report_year
           HAVING report_month = ? AND report_year = ?
         ) r 
         ON r.report_id = m.report_id
@@ -589,7 +589,7 @@ public class UserDataFactory {
         FROM %saggregateuserstats s
         JOIN (
           SELECT MAX(report_id) report_id, report_month, report_year, MAX(report_time) FROM %sreports
-          GROUP BY report_id, report_month, report_year
+          GROUP BY report_month, report_year
           HAVING report_month = ? AND report_year = ?
         ) r 
         ON r.report_id = s.report_id
@@ -639,7 +639,7 @@ public class UserDataFactory {
         FROM %sdownloadsperstudy d
         JOIN (
           SELECT MAX(report_id) report_id, report_month, report_year, MAX(report_time) FROM %sreports
-          GROUP BY report_id, report_month, report_year
+          GROUP BY report_month, report_year
           HAVING report_month = ? AND report_year = ?
         ) r 
         ON r.report_id = d.report_id
@@ -688,7 +688,7 @@ public class UserDataFactory {
         FROM %sanalysishistogram h
         JOIN (
           SELECT MAX(report_id) report_id, report_month, report_year, MAX(report_time) FROM %sreports
-          GROUP BY report_id, report_month, report_year
+          GROUP BY report_month, report_year
           HAVING report_month = ? AND report_year = ?
         ) r 
         ON r.report_id = h.report_id

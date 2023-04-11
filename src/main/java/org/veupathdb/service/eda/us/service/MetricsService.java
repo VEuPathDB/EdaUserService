@@ -33,6 +33,9 @@ public class MetricsService implements MetricsUserProjectIdAnalyses {
 
     @Override
     public GetMetricsUserAnalysesReportsByProjectIdResponse getMetricsUserAnalysesReportsByProjectId(String projectId, String reportMonth) {
+        if (reportMonth == null) {
+            throw new BadRequestException("Missing required query parameter \"reportMonth\"");
+        }
         String[] yearMonthParts = reportMonth.split("-");
         int year = Integer.parseInt(yearMonthParts[0]);
         int month = Integer.parseInt(yearMonthParts[1]);
