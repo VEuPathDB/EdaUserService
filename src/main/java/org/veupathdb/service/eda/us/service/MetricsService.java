@@ -3,12 +3,10 @@ package org.veupathdb.service.eda.us.service;
 import jakarta.ws.rs.BadRequestException;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.generated.resources.MetricsUserProjectIdAnalyses;
-import org.veupathdb.service.eda.generated.resources.MetricsUserProjectIdReports;
 import org.veupathdb.service.eda.us.model.TabularDataWriter;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
