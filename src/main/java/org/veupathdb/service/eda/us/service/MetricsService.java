@@ -44,14 +44,14 @@ public class MetricsService implements MetricsUserProjectIdAnalyses {
             try {
                 final ZipOutputStream zipOutput = new ZipOutputStream(outputStream);
                 TabularDataWriter formatter = new TabularDataWriter.TsvFormatter(zipOutput);
-                zipOutput.putNextEntry(new ZipEntry("analysis-histogram"));
-                userDataFactory.streamAnalysisHistogram(year, month, formatter);
-                zipOutput.putNextEntry(new ZipEntry("analysis-totals"));
-                userDataFactory.streamAggregateUserStats(year, month, formatter);
-                zipOutput.putNextEntry(new ZipEntry("analysis-study-metrics"));
-                userDataFactory.streamPerStudyAnalysisMetrics(year, month, formatter);
-                zipOutput.putNextEntry(new ZipEntry("download-study-metrics"));
-                userDataFactory.streamDownloadReport(year, month, formatter);
+                zipOutput.putNextEntry(new ZipEntry("analysis-histogram-" + reportMonth));
+                userDataFactory.streamAnalysisHistogram(year, month, formatter, reportMonth);
+                zipOutput.putNextEntry(new ZipEntry("analysis-totals-" + reportMonth));
+                userDataFactory.streamAggregateUserStats(year, month, formatter, reportMonth);
+                zipOutput.putNextEntry(new ZipEntry("analysis-study-metrics-" + reportMonth));
+                userDataFactory.streamPerStudyAnalysisMetrics(year, month, formatter, reportMonth);
+                zipOutput.putNextEntry(new ZipEntry("download-study-metrics-" + reportMonth));
+                userDataFactory.streamDownloadReport(year, month, formatter, reportMonth);
                 zipOutput.closeEntry();
                 zipOutput.close();
             } catch (IOException e) {
