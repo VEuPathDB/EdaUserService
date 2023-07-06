@@ -99,6 +99,7 @@ public class UserDataFactory {
       Types.CLOB, // descriptor
       Types.CLOB // notes
   };
+  private static final String REPORT_MONTH_COL = "report_month";
 
   private final String _userSchema;
   private final String _metricsReportsSchema;
@@ -530,7 +531,7 @@ public class UserDataFactory {
         ), EXCEPTION_HANDLER);
   }
 
-  public void streamPerStudyAnalysisMetrics(int year, int month, TabularDataWriter tabularFormatter) {
+  public void streamPerStudyAnalysisMetrics(int year, int month, TabularDataWriter tabularFormatter, String reportMonth) {
     String sql = """
         SELECT 
           m.dataset_id, 
@@ -545,7 +546,7 @@ public class UserDataFactory {
         ON r.report_id = m.report_id
     """.formatted(_metricsReportsSchema, _metricsReportsSchema);
     try {
-      tabularFormatter.write("dataset_id", "analysis_count", "shares_count");
+      tabularFormatter.write("dataset_id", "analysis_count", "shares_count", REPORT_MONTH_COL);
       tabularFormatter.nextRecord();
     } catch (IOException e) {
       throw new RuntimeException("Unable to write headers.", e);
@@ -563,6 +564,7 @@ public class UserDataFactory {
                   tabularFormatter.write(rs.getString("dataset_id"));
                   tabularFormatter.write(Integer.toString(rs.getInt("analysis_count")));
                   tabularFormatter.write(Integer.toString(rs.getInt("shares_count")));
+                  tabularFormatter.write(reportMonth);
                   tabularFormatter.nextRecord();
                 } catch (IOException e) {
                   throw new RuntimeException("Error while attempting to write to output stream.", e);
@@ -573,7 +575,7 @@ public class UserDataFactory {
         ), EXCEPTION_HANDLER);
   }
 
-  public void streamAggregateUserStats(int year, int month, TabularDataWriter tabularFormatter) {
+  public void streamAggregateUserStats(int year, int month, TabularDataWriter tabularFormatter, String reportMonth) {
     final String categoryCol = "user_category";
     final String numUserCol = "num_users";
     final String numFiltersCol = "num_filters";
@@ -596,7 +598,7 @@ public class UserDataFactory {
         """.formatted(categoryCol, numUserCol, numFiltersCol, numAnalysesCol, numVizCol,
         _metricsReportsSchema, _metricsReportsSchema);
     try {
-      tabularFormatter.write(categoryCol, numUserCol, numFiltersCol, numAnalysesCol, numVizCol);
+      tabularFormatter.write(categoryCol, numUserCol, numFiltersCol, numAnalysesCol, numVizCol, REPORT_MONTH_COL);
       tabularFormatter.nextRecord();
     } catch (IOException e) {
       throw new RuntimeException("Unable to write headers.", e);
@@ -617,6 +619,7 @@ public class UserDataFactory {
                   tabularFormatter.write(Integer.toString(rs.getInt(numFiltersCol)));
                   tabularFormatter.write(Integer.toString(rs.getInt(numAnalysesCol)));
                   tabularFormatter.write(Integer.toString(rs.getInt(numVizCol)));
+                  tabularFormatter.write(reportMonth);
                   tabularFormatter.nextRecord();
                 } catch (IOException e) {
                   throw new RuntimeException("Error while attempting to write to output stream.", e);
@@ -627,7 +630,7 @@ public class UserDataFactory {
         ), EXCEPTION_HANDLER);
   }
 
-  public void streamDownloadReport(int year, int month, TabularDataWriter recordFormatter) {
+  public void streamDownloadReport(int year, int month, TabularDataWriter recordFormatter, String reportMonth) {
     final String studyIdCol = "study_id";
     final String numUsersFullDownloadCol = "num_users_full_download";
     final String numUsersSubsetDownloadCol = "num_users_subset_download";
@@ -646,7 +649,7 @@ public class UserDataFactory {
     """.formatted(studyIdCol, numUsersFullDownloadCol, numUsersSubsetDownloadCol, _metricsReportsSchema, _metricsReportsSchema);
 
     try {
-      recordFormatter.write(studyIdCol, numUsersFullDownloadCol, numUsersSubsetDownloadCol);
+      recordFormatter.write(studyIdCol, numUsersFullDownloadCol, numUsersSubsetDownloadCol, REPORT_MONTH_COL);
       recordFormatter.nextRecord();
     } catch (IOException e) {
       throw new RuntimeException("Unable to write headers.", e);
@@ -665,6 +668,7 @@ public class UserDataFactory {
                   recordFormatter.write(rs.getString("study_id"));
                   recordFormatter.write(Integer.toString(rs.getInt("num_users_full_download")));
                   recordFormatter.write(Integer.toString(rs.getInt("num_users_subset_download")));
+                  recordFormatter.write(reportMonth);
                   recordFormatter.nextRecord();
                 } catch (IOException e) {
                   throw new RuntimeException("Error while attempting to write to output stream.", e);
@@ -675,7 +679,7 @@ public class UserDataFactory {
         ), EXCEPTION_HANDLER);
   }
 
-  public void streamAnalysisHistogram(int year, int month, TabularDataWriter tabularFormatter) {
+  public void streamAnalysisHistogram(int year, int month, TabularDataWriter tabularFormatter, String reportMonth) {
     String sql = """
         SELECT 
           h.count_bucket, 
@@ -695,7 +699,7 @@ public class UserDataFactory {
     """.formatted(_metricsReportsSchema, _metricsReportsSchema);
     try {
       tabularFormatter.write("count_bucket", "registered_users_analyses", "guests_analyses",
-          "guests_filters", "registered_users_visualizations", "guest_user_visualizations");
+          "guests_filters", "registered_users_visualizations", "guest_user_visualizations", REPORT_MONTH_COL);
       tabularFormatter.nextRecord();
     } catch (Exception e) {
       throw new RuntimeException("Failed to write header rows", e);
@@ -717,6 +721,7 @@ public class UserDataFactory {
                   tabularFormatter.write(Integer.toString(rs.getInt("guests_filters")));
                   tabularFormatter.write(Integer.toString(rs.getInt("registered_users_visualizations")));
                   tabularFormatter.write(Integer.toString(rs.getInt("guest_users_visualizations")));
+                  tabularFormatter.write(reportMonth);
                   tabularFormatter.nextRecord();
                 } catch (IOException e) {
                   throw new RuntimeException(e);
