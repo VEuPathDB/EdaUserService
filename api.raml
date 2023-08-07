@@ -58,7 +58,7 @@ securitySchemes:
 /metrics/user/{project-id}/analyses:
   displayName: Get usage metrics for EDA users by time period
   get:
-    queryParameters: 
+    queryParameters:
       startDate:
         description: optional start date (yyyy-mm-dd)
         type: string
@@ -67,7 +67,7 @@ securitySchemes:
         type: string
       studyType:
         enum: [ALL, USER, CURATED]
-        default: ALL   
+        default: ALL
     responses:
       200:
         body:
@@ -154,3 +154,64 @@ securitySchemes:
               body:
                 application/json:
                   type: lib.AnalysisListPostResponse
+
+  /derived-variables:
+    displayName: Derived Variables
+
+    get:
+      displayName: List Derived Variables
+
+      responses:
+        200:
+          body:
+            application/json:
+              type: lib.DerivedVariableGetResponse[]
+        401:
+        404:
+        500:
+
+    post:
+      displayName: Create a Derived Variable
+
+      body:
+        application/json:
+          type: lib.DerivedVariablePostRequest
+
+      responses:
+        200:
+          body:
+            application/json:
+              type: lib.DerivedVariablePostResponse
+        400:
+        401:
+        403:
+        404:
+        422:
+        500:
+
+    /{derived-variable-id}:
+      get:
+        displayName: Look up a Derived Variable
+
+        responses:
+          200:
+            body:
+              application/json:
+                type: lib.DerivedVariableGetResponse
+          401:
+          403:
+          404:
+          500:
+
+      patch:
+        displayName: Update a Derived Variable
+        body:
+          application/json:
+            type: lib.DerivedVariablePatchRequest
+        responses:
+          204:
+          401:
+          403:
+          404:
+          422:
+          500:

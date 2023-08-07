@@ -630,6 +630,7 @@ types:
       notes?: string
       descriptor?: AnalysisDescriptor
       isPublic?: boolean
+      derivedVariables?: string[]
   DataTableConfig:
     type: object
     additionalProperties: false
@@ -652,7 +653,7 @@ types:
       computations: Computation[]
       starredVariables: VariableSpec[]
       dataTableConfig: DataTableConfigSet
-      derivedVariables: DerivedVariableSpec[]
+      derivedVariables: string[]
   Computation:
     type: object
     additionalProperties: false
@@ -719,4 +720,38 @@ types:
     additionalProperties: false
     properties:
       count: integer
+  DerivedVariablePostRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      datasetId: string
+      entityId: string
+      displayName: string
+      description?: string
+      provenance?: any
+      functionName: string
+      config: object
+  DerivedVariablePostResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      variableId: string
+  DerivedVariableGetResponse:
+    type: object
+    additionalProperties: false
+    properties:
+      variableId: string
+      datasetId: string
+      entityId: string
+      displayName: string
+      description?: string
+      provenance?: any
+      functionName: string
+      config: object
+  DerivedVariablePatchRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      displayName?: string
+      description?: string
 
