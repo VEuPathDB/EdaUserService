@@ -192,8 +192,14 @@ types:
     properties:
       datasetId: string
       entityId: string
-      displayName: string
-      description?: string
+      displayName:
+        type: string
+        minLength: 1
+        maxLength: 256
+      description?:
+        type: string
+        minLength: 0
+        maxLength: 4000
       provenance?: any
       functionName: string
       config: object

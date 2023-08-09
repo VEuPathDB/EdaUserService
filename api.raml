@@ -155,7 +155,11 @@ securitySchemes:
                 application/json:
                   type: lib.AnalysisListPostResponse
 
-  /derived-variables:
+  /derived-variables/{project-id}:
+    uriParameters:
+      project-id:
+        type: string
+
     displayName: Derived Variables
 
     get:

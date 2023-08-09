@@ -9,7 +9,6 @@ import org.json.JSONObject;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.providers.UserProvider;
 import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
-import org.veupathdb.service.eda.common.auth.StudyAccess;
 import org.veupathdb.service.eda.common.client.DatasetAccessClient;
 import org.veupathdb.service.eda.generated.model.AnalysisListPostResponse;
 import org.veupathdb.service.eda.generated.model.SingleAnalysisPublicInfo;
@@ -17,10 +16,7 @@ import org.veupathdb.service.eda.generated.model.SingleAnalysisPublicInfoImpl;
 import org.veupathdb.service.eda.generated.resources.ImportAnalysisProjectId;
 import org.veupathdb.service.eda.us.Resources;
 import org.veupathdb.service.eda.us.Utils;
-import org.veupathdb.service.eda.us.model.AccountDbData;
-import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
-import org.veupathdb.service.eda.us.model.IdGenerator;
-import org.veupathdb.service.eda.us.model.UserDataFactory;
+import org.veupathdb.service.eda.us.model.*;
 
 import java.util.Optional;
 
@@ -75,32 +71,7 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
     }).orElse(oldAnalysis.getUserId());
 
     // make sure user importing has access to this analysis' study
-    try {
-      DatasetAccessClient.BasicStudyDatasetInfo info = new DatasetAccessClient(
-          Resources.DATASET_ACCESS_SERVICE_URL,
-          UserProvider.getSubmittedAuth(request).orElseThrow() // should already have been authenticated
-      )
-      // NOTE: even though we're calling getStudyId(), this method currently returns a dataset ID!!
-      .getStudyPermsByDatasetId(oldAnalysis.getStudyId());
-
-      if (!info.getStudyAccess().allowSubsetting()) {
-        throw new ForbiddenException(new JSONObject()
-            .put("denialReason", "noAccess")
-            .put("message", "The requesting user does not have access to this study.")
-            .put("datasetId", oldAnalysis.getStudyId())
-            .put("isUserDataset", info.isUserStudy())
-            .toString()
-        );
-      }
-    }
-    catch (NotFoundException e) {
-      // per https://github.com/VEuPathDB/EdaUserService/issues/24 if dataset under the study does not exist, throw Forbidden
-      throw new ForbiddenException(new JSONObject()
-          .put("denialReason", "missingDataset")
-          .put("message", "This analysis cannot be imported because the underlying dataset '" + oldAnalysis.getStudyId() + "' no longer exists.")
-          .put("datasetId", oldAnalysis.getStudyId())
-          .toString());
-    }
+    requireStudyAccess(request, oldAnalysis.getStudyId());
 
     // make a copy of the analysis, assign a new owner, check display name (must be unique) and insert
     User newOwner = Utils.getActiveUser(request);
@@ -109,7 +80,61 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
     AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(
         IdGenerator.getNextAnalysisId(dataFactory), newOwner.getUserID(), oldAnalysis, provenanceOwner);
 
+    // If the new owner is not the same as the old owner, we need to create
+    // copies of all the derived variables.
+    if (newOwner.getUserID() != userId) {
+      var descriptor = newAnalysis.getDescriptor();
+      var variables  = dataFactory.getDerivedVariables(descriptor.getDerivedVariables());
+
+      // If the descriptor has derived variables.
+      if (!variables.isEmpty()) {
+        // For each variable, issue a new ID and assign the new user ID, keeping
+        // the other fields unchanged.
+        variables.forEach(v -> {
+          v.setVariableID(Utils.issueUUID());
+          v.setUserID(newOwner.getUserID());
+        });
+
+        // Insert the modified derived variables
+        dataFactory.addDerivedVariables(variables);
+
+        // Replace the descriptor's derived variable IDs with the newly issued
+        // IDs.
+        descriptor.setDerivedVariables(variables.stream().map(DerivedVariableRow::getVariableID).toList());
+      }
+    }
+
     dataFactory.insertAnalysis(newAnalysis);
     return newAnalysis.getIdObject();
+  }
+
+  static void requireStudyAccess(ContainerRequest request, String studyID) {
+    try {
+      DatasetAccessClient.BasicStudyDatasetInfo info = new DatasetAccessClient(
+        Resources.DATASET_ACCESS_SERVICE_URL,
+        UserProvider.getSubmittedAuth(request).orElseThrow() // should already have been authenticated
+      )
+        // NOTE: even though we're calling getStudyId(), this method currently returns a dataset ID!!
+        .getStudyPermsByDatasetId(studyID);
+
+      if (!info.getStudyAccess().allowSubsetting()) {
+        throw new ForbiddenException(new JSONObject()
+          .put("denialReason", "noAccess")
+          .put("message", "The requesting user does not have access to this study.")
+          .put("datasetId", studyID)
+          .put("isUserDataset", info.isUserStudy())
+          .toString()
+        );
+      }
+    }
+    catch (NotFoundException e) {
+      // per https://github.com/VEuPathDB/EdaUserService/issues/24 if dataset under the study does not exist, throw Forbidden
+      throw new ForbiddenException(new JSONObject()
+        .put("denialReason", "missingDataset")
+        .put("message", "This analysis cannot be imported because the underlying dataset '" + studyID + "' no longer exists.")
+        .put("datasetId", studyID)
+        .toString());
+    }
+
   }
 }

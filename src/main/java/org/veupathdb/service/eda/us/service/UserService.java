@@ -1,27 +1,22 @@
 package org.veupathdb.service.eda.us.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Context;
 import org.glassfish.jersey.server.ContainerRequest;
+import org.veupathdb.lib.container.jaxrs.errors.UnprocessableEntityException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
-import org.veupathdb.service.eda.generated.model.AnalysisDetail;
-import org.veupathdb.service.eda.generated.model.AnalysisListPatchRequest;
-import org.veupathdb.service.eda.generated.model.AnalysisListPostRequest;
-import org.veupathdb.service.eda.generated.model.AnalysisSummary;
-import org.veupathdb.service.eda.generated.model.SingleAnalysisPatchRequest;
+import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.generated.resources.UsersUserId;
 import org.veupathdb.service.eda.us.Utils;
-import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
-import org.veupathdb.service.eda.us.model.IdGenerator;
-import org.veupathdb.service.eda.us.model.ProvenancePropsLookup;
-import org.veupathdb.service.eda.us.model.UserDataFactory;
+import org.veupathdb.service.eda.us.model.*;
 
-import static org.veupathdb.service.eda.us.Utils.checkMaxSize;
-import static org.veupathdb.service.eda.us.Utils.checkNonEmpty;
+import static org.veupathdb.service.eda.us.Utils.*;
 
 @Authenticated(allowGuests = true)
 public class UserService implements UsersUserId {
@@ -110,6 +105,72 @@ public class UserService implements UsersUserId {
         ImportAnalysisService.importAnalysis(projectId, analysisId, Optional.of(userId), _request));
   }
 
+  @Override
+  public GetUsersDerivedVariablesByUserIdAndProjectIdResponse getUsersDerivedVariablesByUserIdAndProjectId(String userId, String projectId) {
+    var dataFactory = new UserDataFactory(projectId);
+    var user = Utils.getAuthorizedUser(_request, userId);
+    var variables = dataFactory.getDerivedVariablesForUser(user.getUserID());
+
+    return GetUsersDerivedVariablesByUserIdAndProjectIdResponse
+      .respond200WithApplicationJson(variables.stream().map(DerivedVariableRow::toGetResponse).toList());
+  }
+
+  @Override
+  public PostUsersDerivedVariablesByUserIdAndProjectIdResponse postUsersDerivedVariablesByUserIdAndProjectId(String userId, String projectId, DerivedVariablePostRequest entity) {
+    var dataFactory = new UserDataFactory(projectId);
+    var user = Utils.getAuthorizedUser(_request, userId);
+
+    // Make sure the post body was valid before we go rummaging around in the
+    // database and other services too much.
+    validateDerivedVarPostBody(entity);
+
+    // Ensure the requesting user has access to the target study.
+    ImportAnalysisService.requireStudyAccess(_request, entity.getDatasetId());
+
+    // Issue a new ID
+    var variableID = Utils.issueUUID();
+
+    // Insert the new derived variable.
+    dataFactory.addDerivedVariable(new DerivedVariableRow(variableID, user.getUserID(), entity));
+
+    return PostUsersDerivedVariablesByUserIdAndProjectIdResponse
+      .respond200WithApplicationJson(apply(new DerivedVariablePostResponseImpl(), out -> out.setVariableId(variableID)));
+  }
+
+  @Override
+  public GetUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse getUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableId(String userId, String projectId, String derivedVariableId) {
+    var dataFactory = new UserDataFactory(projectId);
+    var user = Utils.getAuthorizedUser(_request, userId);
+    var variable = dataFactory.getDerivedVariableById(derivedVariableId).orElseThrow(NotFoundException::new);
+
+    if (variable.getUserID() != user.getUserID())
+      throw new NotFoundException();
+
+    return GetUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse
+      .respond200WithApplicationJson(variable.toGetResponse());
+  }
+
+  @Override
+  public PatchUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse patchUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableId(String userId, String projectId, String derivedVariableId, DerivedVariablePatchRequest entity) {
+    var dataFactory = new UserDataFactory(projectId);
+    var user = Utils.getAuthorizedUser(_request, userId);
+    var variable = dataFactory.getDerivedVariableById(derivedVariableId).orElseThrow(NotFoundException::new);
+
+    if (variable.getUserID() != user.getUserID())
+      throw new ForbiddenException();
+
+    var displayName = entity.getDisplayName() == null || entity.getDisplayName().isBlank()
+      ? variable.getDisplayName()
+      : entity.getDisplayName();
+    var description = entity.getDescription() == null
+      ? variable.getDescription()
+      : entity.getDescription();
+
+    dataFactory.patchDerivedVariable(derivedVariableId, displayName, description);
+
+    return PatchUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse.respond204();
+  }
+
   private void performBulkDeletion(UserDataFactory dataFactory, User user, List<String> analysisIdsToDelete) {
     if (analysisIdsToDelete == null || analysisIdsToDelete.isEmpty())
       return;
@@ -155,9 +216,31 @@ public class UserService implements UsersUserId {
     if (entity.getNotes() != null) {
       changeMade = true; analysis.setNotes(entity.getNotes());
     }
+    if (entity.getDerivedVariables() != null) {
+      changeMade = true; analysis.getDescriptor().setDerivedVariables(entity.getDerivedVariables());
+    }
     if (changeMade) {
       analysis.setModificationTime(Utils.getCurrentDateTimeString());
     }
   }
 
+  private static void validateDerivedVarPostBody(DerivedVariablePostRequest request) {
+    var errors = new HashMap<String, List<String>>();
+
+    if (request.getDatasetId() == null || request.getDatasetId().isBlank())
+      errors.put("datasetId", List.of("cannot be null or blank"));
+    if (request.getEntityId() == null || request.getEntityId().isBlank())
+      errors.put("entityId", List.of("cannot be null or blank"));
+    if (request.getDisplayName() == null || request.getDisplayName().isBlank())
+      errors.put("displayName", List.of("cannot be null or blank"));
+    if (request.getDescription() != null && request.getDescription().isBlank())
+      request.setDescription(null);
+    if (request.getFunctionName() == null || request.getFunctionName().isBlank())
+      errors.put("functionName", List.of("cannot be null or blank"));
+    if (request.getConfig() == null)
+      errors.put("config", List.of("cannot be null"));
+
+    if (!errors.isEmpty())
+      throw new UnprocessableEntityException(errors);
+  }
 }
