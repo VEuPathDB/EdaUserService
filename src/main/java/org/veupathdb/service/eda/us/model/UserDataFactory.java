@@ -325,7 +325,7 @@ public class UserDataFactory {
       row.getEntityID(),
       row.getDisplayName(),
       row.getDescription(),
-      row.getProvenance().toString(),
+      row.getProvenance() == null ? null : row.getProvenance().toString(),
       row.getFunctionName(),
       row.getConfig().toString(),
     };

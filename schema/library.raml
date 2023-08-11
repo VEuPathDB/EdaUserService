@@ -630,7 +630,6 @@ types:
       notes?: string
       descriptor?: AnalysisDescriptor
       isPublic?: boolean
-      derivedVariables?: string[]
   DataTableConfig:
     type: object
     additionalProperties: false
@@ -726,8 +725,13 @@ types:
     properties:
       datasetId: string
       entityId: string
-      displayName: string
-      description?: string
+      displayName:
+        type: string
+        minLength: 1
+        maxLength: 256
+      description?:
+        type: string
+        maxLength: 4000
       provenance?: any
       functionName: string
       config: object
