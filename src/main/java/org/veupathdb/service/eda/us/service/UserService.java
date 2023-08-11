@@ -1,8 +1,7 @@
 package org.veupathdb.service.eda.us.service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
@@ -85,7 +84,22 @@ public class UserService implements UsersUserId {
     User user = Utils.getAuthorizedUser(_request, userId);
     AnalysisDetailWithUser analysis = dataFactory.getAnalysisById(analysisId);
     Utils.verifyOwnership(user.getUserID(), analysis);
+
+    var oldDescriptor = analysis.getDescriptor();
+
     editAnalysis(user, analysis, entity);
+
+    // If the descriptor instance has changed AND we have derived variables then
+    // validate the derived variables to ensure all the IDs point to actual
+    // variables that belong to the same study and user as the analysis.
+    if (
+      analysis.getDescriptor() != oldDescriptor
+        && analysis.getDescriptor().getDerivedVariables() != null
+        && !analysis.getDescriptor().getDerivedVariables().isEmpty()
+    ) {
+      validateDerivedVars(dataFactory, user.getUserID(), analysis);
+    }
+
     dataFactory.updateAnalysis(analysis);
     return PatchUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse.respond202();
   }
@@ -216,12 +230,33 @@ public class UserService implements UsersUserId {
     if (entity.getNotes() != null) {
       changeMade = true; analysis.setNotes(entity.getNotes());
     }
-    if (entity.getDerivedVariables() != null) {
-      changeMade = true; analysis.getDescriptor().setDerivedVariables(entity.getDerivedVariables());
-    }
     if (changeMade) {
       analysis.setModificationTime(Utils.getCurrentDateTimeString());
     }
+  }
+
+  private static void validateDerivedVars(UserDataFactory dataFactory, long requesterID, AnalysisDetail analysis) {
+    var errors = new ArrayList<String>();
+
+    var dbVars = new HashMap<String, DerivedVariableRow>(analysis.getDescriptor().getDerivedVariables().size());
+
+    dataFactory.getDerivedVariables(analysis.getDescriptor().getDerivedVariables())
+      .forEach(row -> dbVars.put(row.getVariableID(), row));
+
+    for (var inputVar : analysis.getDescriptor().getDerivedVariables()) {
+      var dbVar = dbVars.get(inputVar);
+
+      if (dbVar == null) {
+        errors.add("Unrecognized derived variable: " + inputVar);
+      } else if (dbVar.getUserID() != requesterID) {
+        errors.add("Derived variable " + inputVar + " is not owned by the requesting user");
+      } else if (!dbVar.getDatasetID().equals(analysis.getStudyId())) {
+        errors.add("Derived variable " + inputVar + " does not belong to the same study as the target analysis");
+      }
+    }
+
+    if (!errors.isEmpty())
+      throw new UnprocessableEntityException(errors, Collections.emptyMap());
   }
 
   private static void validateDerivedVarPostBody(DerivedVariablePostRequest request) {
