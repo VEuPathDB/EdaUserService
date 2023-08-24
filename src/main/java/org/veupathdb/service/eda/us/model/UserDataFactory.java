@@ -8,7 +8,6 @@ import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.BasicArgumentBatch;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.functional.FunctionalInterfaces.SupplierWithException;
-import org.gusdb.fgputil.functional.Functions;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
@@ -125,6 +124,31 @@ public class UserDataFactory {
    *** Select Multiple Derived Variables
    **************************************************************************************/
 
+  private static final String
+    DV_COL_VARIABLE_ID   = "variable_id",
+    DV_COL_USER_ID       = "user_id",
+    DV_COL_DATASET_ID    = "dataset_id",
+    DV_COL_ENTITY_ID     = "entity_id",
+    DV_COL_DISPLAY_NAME  = "display_name",
+    DV_COL_DESCRIPTION   = "description",
+    DV_COL_PROVENANCE    = "provenance",
+    DV_COL_FUNCTION_NAME = "function_name",
+    DV_COL_CONFIG        = "config";
+
+  private static DerivedVariableRow resultSetToDVRow(ResultSet rs) {
+    return mapException(() -> new DerivedVariableRow(
+      rs.getString(DV_COL_VARIABLE_ID),
+      rs.getLong(DV_COL_USER_ID),
+      rs.getString(DV_COL_DATASET_ID),
+      rs.getString(DV_COL_ENTITY_ID),
+      rs.getString(DV_COL_DISPLAY_NAME),
+      rs.getString(DV_COL_DESCRIPTION),
+      with(rs.getString(DV_COL_PROVENANCE), p -> mapException(() -> p == null ? null : Utils.JSON.readTree(p), EXCEPTION_HANDLER)),
+      rs.getString(DV_COL_FUNCTION_NAME),
+      with(rs.getString(DV_COL_CONFIG), c -> mapException(() -> Utils.JSON.readTree(c), EXCEPTION_HANDLER))
+    ), EXCEPTION_HANDLER);
+  }
+
   /**
    * Prefix SQL for bulk selecting derived variables by ID.
    *
@@ -177,17 +201,7 @@ public class UserDataFactory {
         var out = new ArrayList<DerivedVariableRow>(ids.size());
 
         while (rs.next())
-          out.add(new DerivedVariableRow(
-            rs.getString("variable_id"),
-            rs.getLong("user_id"),
-            rs.getString("dataset_id"),
-            rs.getString("entity_id"),
-            rs.getString("display_name"),
-            rs.getString("description"),
-            with(rs.getString("provenance"), p -> mapException(() -> p == null ? null : Utils.JSON.readTree(p), EXCEPTION_HANDLER)),
-            rs.getString("function_name"),
-            with(rs.getString("config"), c -> mapException(() -> Utils.JSON.readTree(c), EXCEPTION_HANDLER))
-          ));
+          out.add(resultSetToDVRow(rs));
 
         return out;
       }), EXCEPTION_HANDLER);
@@ -218,9 +232,9 @@ public class UserDataFactory {
 
   // language=Oracle
   private static final String SELECT_DERIVED_VAR_SQL =
-    "SELECT user_id, dataset_id, entity_id, display_name, description, "
-      + "provenance, function_name, config FROM " + TABLE_DERIVED_VARS
-      + " WHERE variable_id = ?";
+    "SELECT variable_id, user_id, dataset_id, entity_id, display_name, "
+      + "description, provenance, function_name, config FROM "
+      + TABLE_DERIVED_VARS + " WHERE variable_id = ?";
 
   public Optional<DerivedVariableRow> getDerivedVariableById(String variableId) {
     return mapException(() -> {
@@ -233,17 +247,7 @@ public class UserDataFactory {
             if (!rs.next())
               return Optional.empty();
 
-            return mapException(() -> Optional.of(new DerivedVariableRow(
-              variableId,
-              rs.getLong("user_id"),
-              rs.getString("dataset_id"),
-              rs.getString("entity_id"),
-              rs.getString("display_name"),
-              rs.getString("description"),
-              rs.getString("provenance") == null ? null : Utils.JSON.readTree(rs.getString("provenance")),
-              rs.getString("function_name"),
-              Utils.JSON.readTree(rs.getString("config"))
-            )), EXCEPTION_HANDLER);
+            return Optional.of(resultSetToDVRow(rs));
           }
         );
     }, EXCEPTION_HANDLER);
@@ -255,9 +259,9 @@ public class UserDataFactory {
 
   // language=Oracle
   private static final String SELECT_DERIVED_VAR_BY_USER_SQL =
-    "SELECT variable_id, dataset_id, entity_id, display_name, description, "
-      + "provenance, function_name, config FROM " + TABLE_DERIVED_VARS
-      + " WHERE user_id = ?";
+    "SELECT variable_id, user_id, dataset_id, entity_id, display_name, "
+      + "description, provenance, function_name, config FROM "
+      + TABLE_DERIVED_VARS + " WHERE user_id = ?";
 
   public List<DerivedVariableRow> getDerivedVariablesForUser(long userID) {
     return mapException(() -> {
@@ -268,19 +272,9 @@ public class UserDataFactory {
           new Integer[]{ Types.BIGINT },
           rs -> {
             var out = new ArrayList<DerivedVariableRow>();
-            while (rs.next()) {
-              out.add(mapException(() -> new DerivedVariableRow(
-                rs.getString("variable_id"),
-                userID,
-                rs.getString("dataset_id"),
-                rs.getString("entity_id"),
-                rs.getString("display_name"),
-                rs.getString("description"),
-                rs.getString("provenance") == null ? null : Utils.JSON.readTree(rs.getString("provenance")),
-                rs.getString("function_name"),
-                Utils.JSON.readTree(rs.getString("config"))
-              ), EXCEPTION_HANDLER));
-            }
+
+            while (rs.next())
+              out.add(resultSetToDVRow(rs));
 
             return out;
           }
