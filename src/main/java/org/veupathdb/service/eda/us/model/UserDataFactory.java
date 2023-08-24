@@ -8,6 +8,7 @@ import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.BasicArgumentBatch;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.functional.FunctionalInterfaces.SupplierWithException;
+import org.gusdb.fgputil.functional.Functions;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
@@ -22,9 +23,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.gusdb.fgputil.functional.Functions.mapException;
-import static org.veupathdb.service.eda.us.Utils.apply;
-import static org.veupathdb.service.eda.us.Utils.let;
+import static org.gusdb.fgputil.functional.Functions.*;
 
 /**
  * Performs all database operations for the user service
@@ -159,6 +158,9 @@ public class UserDataFactory {
    * </p>
    *
    * @param ids List of derived variable IDs for the rows to look up.
+   * <br>
+   * THIS LIST MUST BE VALIDATED BEFOREHAND TO PREVENT SQL INJECTION!  Derived
+   * variable IDs must be UUID values.
    *
    * @return A list of {@link DerivedVariableRow} instances that were found to
    * match one of the given input IDs.  This list will be at most the same size
@@ -182,9 +184,9 @@ public class UserDataFactory {
             rs.getString("entity_id"),
             rs.getString("display_name"),
             rs.getString("description"),
-            let(rs.getString("provenance"), p -> mapException(() -> p == null ? null : Utils.JSON.readTree(p), EXCEPTION_HANDLER)),
+            with(rs.getString("provenance"), p -> mapException(() -> p == null ? null : Utils.JSON.readTree(p), EXCEPTION_HANDLER)),
             rs.getString("function_name"),
-            let(rs.getString("config"), c -> mapException(() -> Utils.JSON.readTree(c), EXCEPTION_HANDLER))
+            with(rs.getString("config"), c -> mapException(() -> Utils.JSON.readTree(c), EXCEPTION_HANDLER))
           ));
 
         return out;
@@ -345,7 +347,7 @@ public class UserDataFactory {
 
     mapException(() -> {
       new SQLRunner(Resources.getUserDataSource(), addSchema(INSERT_DERIVED_VAR_SQL))
-        .executeStatementBatch(apply(new BasicArgumentBatch(), bab -> {
+        .executeStatementBatch(also(new BasicArgumentBatch(), bab -> {
           bab.setParameterTypes(INSERT_DERIVED_VAR_TYPES);
           rows.forEach(row -> bab.add(derivedVarToInsertRow(row)));
         }));

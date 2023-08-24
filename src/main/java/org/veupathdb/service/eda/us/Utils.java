@@ -88,26 +88,6 @@ public class Utils {
     return UUID.randomUUID().toString();
   }
 
-  public static <I, T> T let(I value, Function<I, T> fn) {
-    return fn.apply(value);
-  }
-
-  /**
-   * Applies the given function (fn) to the given value, returning the input
-   * value after the function is applied.
-   *
-   * @param value Value to which {@code fn} will be applied.
-   * @param fn Function that will be applied to {@code value}.
-
-   * @param <T> Type of {@code value}.
-   *
-   * @return The input {@code value} after {@code fn} has been applied.
-   */
-  public static <T> T apply(T value, Consumer<T> fn) {
-    fn.accept(value);
-    return value;
-  }
-
   public static String formatObject(Object obj) {
     try {
       return JsonUtil.Jackson.writeValueAsString(obj);

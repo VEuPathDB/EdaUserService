@@ -235,10 +235,23 @@ public class UserService implements UsersUserId {
     }
   }
 
+  private static void validateDerivedVarId(List<String> errors, String derivedVariableId) {
+    int l = derivedVariableId.length();
+    for (int i = 0; i < l; i++) {
+      if (!isUuidDigit(derivedVariableId.charAt(i))) {
+        errors.add("Invalid derived variable ID: " + derivedVariableId);
+      }
+    }
+  }
+
   private static void validateDerivedVars(UserDataFactory dataFactory, long requesterID, AnalysisDetail analysis) {
     var errors = new ArrayList<String>();
 
     var dbVars = new HashMap<String, DerivedVariableRow>(analysis.getDescriptor().getDerivedVariables().size());
+
+    analysis.getDescriptor()
+      .getDerivedVariables()
+      .forEach(id -> validateDerivedVarId(errors, id));
 
     dataFactory.getDerivedVariables(analysis.getDescriptor().getDerivedVariables())
       .forEach(row -> dbVars.put(row.getVariableID(), row));
