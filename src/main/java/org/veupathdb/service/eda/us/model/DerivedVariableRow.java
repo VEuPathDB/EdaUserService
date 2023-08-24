@@ -6,7 +6,7 @@ import org.veupathdb.service.eda.generated.model.DerivedVariableGetResponseImpl;
 import org.veupathdb.service.eda.generated.model.DerivedVariablePostRequest;
 import org.veupathdb.service.eda.us.Utils;
 
-import static org.veupathdb.service.eda.us.Utils.apply;
+import static org.gusdb.fgputil.functional.Functions.also;
 
 /**
  * Represents a complete database row for a Derived Variable.
@@ -131,7 +131,7 @@ public class DerivedVariableRow {
   }
 
   public DerivedVariableGetResponse toGetResponse() {
-    return apply(new DerivedVariableGetResponseImpl(), out -> {
+    return also(new DerivedVariableGetResponseImpl(), out -> {
       out.setVariableId(variableID);
       out.setDatasetId(datasetID);
       out.setEntityId(entityID);

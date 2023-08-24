@@ -739,12 +739,10 @@ types:
     type: VariableSpec
     additionalProperties: false
   DerivedVariableGetResponse:
-    type: object
+    type: VariableSpec
     additionalProperties: false
     properties:
-      variableId: string
       datasetId: string
-      entityId: string
       displayName: string
       description?: string
       provenance?: any
