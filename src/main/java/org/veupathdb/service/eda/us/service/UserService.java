@@ -7,6 +7,7 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Context;
 import org.glassfish.jersey.server.ContainerRequest;
+import org.gusdb.fgputil.StringUtil;
 import org.veupathdb.lib.container.jaxrs.errors.UnprocessableEntityException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
@@ -15,6 +16,7 @@ import org.veupathdb.service.eda.generated.resources.UsersUserId;
 import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.*;
 
+import static org.gusdb.fgputil.functional.Functions.also;
 import static org.veupathdb.service.eda.us.Utils.*;
 
 @Authenticated(allowGuests = true)
@@ -148,7 +150,7 @@ public class UserService implements UsersUserId {
     dataFactory.addDerivedVariable(new DerivedVariableRow(variableID, user.getUserID(), entity));
 
     return PostUsersDerivedVariablesByUserIdAndProjectIdResponse
-      .respond200WithApplicationJson(apply(new DerivedVariablePostResponseImpl(), out -> out.setVariableId(variableID)));
+      .respond200WithApplicationJson(also(new DerivedVariablePostResponseImpl(), out -> out.setVariableId(variableID)));
   }
 
   @Override
@@ -236,12 +238,8 @@ public class UserService implements UsersUserId {
   }
 
   private static void validateDerivedVarId(List<String> errors, String derivedVariableId) {
-    int l = derivedVariableId.length();
-    for (int i = 0; i < l; i++) {
-      if (!isUuidDigit(derivedVariableId.charAt(i))) {
-        errors.add("Invalid derived variable ID: " + derivedVariableId);
-      }
-    }
+    if (!StringUtil.isUuid(derivedVariableId))
+      errors.add("Invalid derived variable ID: " + derivedVariableId);
   }
 
   private static void validateDerivedVars(UserDataFactory dataFactory, long requesterID, AnalysisDetail analysis) {

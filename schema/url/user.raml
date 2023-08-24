@@ -208,11 +208,10 @@ types:
     additionalProperties: false
 
   DerivedVariableGetResponse:
+    type: VariableSpec
     additionalProperties: false
     properties:
-      variableId: string
       datasetId: string
-      entityId: string
       displayName: string
       description?: string
       provenance?: any
