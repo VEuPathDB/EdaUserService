@@ -6,7 +6,12 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -20,6 +25,8 @@ import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
 public class Utils {
+
+  public static final ObjectMapper JSON = new ObjectMapper();
 
   public static User getActiveUser(ContainerRequest request) {
     return UserProvider.lookupUser(request).orElseThrow(() ->
@@ -75,6 +82,10 @@ public class Utils {
     catch (JsonProcessingException e) {
       throw new RuntimeException("Could not map JSON string to a " + clazz.getName() + " object", e);
     }
+  }
+
+  public static String issueUUID() {
+    return UUID.randomUUID().toString();
   }
 
   public static String formatObject(Object obj) {
