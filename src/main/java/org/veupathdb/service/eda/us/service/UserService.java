@@ -1,18 +1,17 @@
 package org.veupathdb.service.eda.us.service;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Context;
 import org.glassfish.jersey.server.ContainerRequest;
+import org.gusdb.fgputil.StringUtil;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
-import org.veupathdb.service.eda.generated.model.AnalysisDetail;
-import org.veupathdb.service.eda.generated.model.AnalysisListPatchRequest;
-import org.veupathdb.service.eda.generated.model.AnalysisListPostRequest;
-import org.veupathdb.service.eda.generated.model.AnalysisSummary;
-import org.veupathdb.service.eda.generated.model.SingleAnalysisPatchRequest;
+import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.generated.resources.UsersUserId;
 import org.veupathdb.service.eda.us.Utils;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
@@ -90,7 +89,21 @@ public class UserService implements UsersUserId {
     User user = Utils.getAuthorizedUser(_request, userId);
     AnalysisDetailWithUser analysis = dataFactory.getAnalysisById(analysisId);
     Utils.verifyOwnership(user.getUserID(), analysis);
+
+    // Store off a reference to the original derived variable ID list to use to
+    // compare to the potential new list later.
+    var originalDerivedVars = getDerivedVariables(analysis);
+
     editAnalysis(user, analysis, entity);
+
+    var newDerivedVars = processPatchedDerivedVars(user, dataFactory, analysis, originalDerivedVars, getDerivedVariables(analysis));
+    if (!newDerivedVars.isEmpty()) {
+      if (analysis.getDescriptor() == null)
+        analysis.setDescriptor(new AnalysisDescriptorImpl());
+
+      analysis.getDescriptor().setDerivedVariables(newDerivedVars);
+    }
+
     dataFactory.updateAnalysis(analysis);
     return PatchUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse.respond202();
   }
@@ -150,7 +163,13 @@ public class UserService implements UsersUserId {
           checkMaxSize(4000, "description", entity.getDescription()));
     }
     if (entity.getDescriptor() != null) {
-      changeMade = true; analysis.setDescriptor(entity.getDescriptor());
+      changeMade = true;
+      analysis.setDescriptor(entity.getDescriptor());
+
+      // Validate any patched in derived variable IDs
+      for (var derivedVarID : getDerivedVariables(analysis))
+        if (!StringUtil.isUuid(derivedVarID))
+          throw new BadRequestException("derived variable id " + derivedVarID + "is invalid");
     }
     if (entity.getNotes() != null) {
       changeMade = true; analysis.setNotes(entity.getNotes());
@@ -158,6 +177,83 @@ public class UserService implements UsersUserId {
     if (changeMade) {
       analysis.setModificationTime(Utils.getCurrentDateTimeString());
     }
+  }
+
+  private static List<String> getDerivedVariables(AnalysisDetail analysis) {
+    return Optional.of(analysis.getDescriptor())
+      .map(AnalysisDescriptor::getDerivedVariables)
+      .orElseGet(Collections::emptyList);
+  }
+
+  /**
+   * Compares the given lists of derived variable IDs and, if they differ,
+   * unions them into a new list containing all the distinct ID values.
+   *
+   * @param user Target user record.
+   * @param dataFactory User data factory used to perform database lookups to
+   *   test the validity of any new derived variable IDs.
+   * @param analysis Target analysis to which the derived variables are being
+   *   attached.
+   * @param oldIDs The original list of derived variable IDs attached to a given
+   *   entity.
+   * @param newIDs The new list of derived variable IDs that was sent in to the
+   *   API by the client.
+   *
+   * @return The unioned list of the two input lists of derived variable IDs.
+   */
+  private static List<String> processPatchedDerivedVars(
+    User user,
+    UserDataFactory dataFactory,
+    AnalysisDetailWithUser analysis,
+    List<String> oldIDs,
+    List<String> newIDs
+  ) {
+    // If the list of derived variables hasn't changed any, then there's nothing
+    // for us to do.  Yay!
+    if (oldIDs.equals(newIDs))
+      return oldIDs;
+
+    // If the new list of derived variables differs from the original list,
+    // validate the derived variables in the list then union the new list with
+    // the original list to form the new list of derived vars.
+
+    var newIDSet = new HashSet<>(newIDs);
+
+    // Remove any overlap with the original set of derived variables so that
+    // we aren't doing any needless validation work (we will add them back
+    // later).
+    //
+    // NOTE: Using a forEach here instead of Collection::removeAll as the
+    // HashSet implementation of removeAll is far less performant.
+    oldIDs.forEach(newIDSet::remove);
+
+    // Fetch a list of all the matching derived variables from the database.
+    // NOTE: At this point the derived variable IDs are all known to be valid
+    // UUID values, which means SQL injection here is not possible.
+    var dbDerivedVars = dataFactory.getDerivedVariables(newIDSet);
+
+    // If we didn't find all the derived variables that we searched for, then
+    // one or more of them are invalid.
+    if (dbDerivedVars.size() != newIDSet.size())
+      throw new BadRequestException("one or more of the derived variable IDs provided do not exist");
+
+    // Verify that the derived variables that the client requested all belong to
+    // the target user and study.
+    for (var derivedVariableRow : dbDerivedVars) {
+      if (derivedVariableRow.getUserID() != user.getUserID())
+        throw new BadRequestException("one or more of the given derived variable IDs does not belong to the target user");
+
+      if (!derivedVariableRow.getDatasetID().equals(analysis.getStudyId()))
+        throw new BadRequestException("one or more of the given derived variable IDs does not belong to the target study");
+    }
+
+    // At this point we know that all the given derived variable IDs exist in
+    // the database and are attached to the target user and dataset.  Go ahead
+    // and add back the original IDs so we can write the full list of attached
+    // derived variables back to the database.
+    newIDSet.addAll(oldIDs);
+
+    return newIDSet.stream().toList();
   }
 
 }

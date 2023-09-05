@@ -190,7 +190,7 @@ public class UserDataFactory {
    * match one of the given input IDs.  This list will be at most the same size
    * as the input list of IDs, but may be smaller.
    */
-  public List<DerivedVariableRow> getDerivedVariables(List<String> ids) {
+  public List<DerivedVariableRow> getDerivedVariables(Collection<String> ids) {
     var sql = addSchema(ids.stream()
       .collect(Collectors.joining("','", BULK_SELECT_DERIVED_VARS_PREFIX, BULK_SELECT_DERIVED_VARS_SUFFIX)));
 
