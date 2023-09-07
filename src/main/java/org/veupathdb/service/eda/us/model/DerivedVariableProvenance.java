@@ -1,9 +1,11 @@
 package org.veupathdb.service.eda.us.model;
 
+import org.json.JSONObject;
 import org.veupathdb.service.eda.generated.model.DerivedVariableProvenanceImpl;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Objects;
 
@@ -26,6 +28,13 @@ public class DerivedVariableProvenance {
     this(provenance.getCopyDate(), provenance.getCopiedFrom());
   }
 
+  public DerivedVariableProvenance(JSONObject json) {
+    this(
+      OffsetDateTime.parse(json.getString("copyDate"), DateTimeFormatter.ISO_DATE_TIME),
+      json.getString("copiedFrom")
+    );
+  }
+
   public OffsetDateTime getCopyDate() {
     return copyDate;
   }
@@ -39,6 +48,12 @@ public class DerivedVariableProvenance {
       it.setCopyDate(Date.from(copyDate.toInstant()));
       it.setCopiedFrom(copiedFrom);
     });
+  }
+
+  public JSONObject toJSONObject() {
+    return new JSONObject()
+      .put("copyDate", copyDate.format(DateTimeFormatter.ISO_DATE_TIME))
+      .put("copiedFrom", copiedFrom);
   }
 
   @Override

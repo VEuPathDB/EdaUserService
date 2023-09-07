@@ -8,6 +8,7 @@ import org.gusdb.fgputil.ArrayUtil;
 import org.gusdb.fgputil.db.runner.BasicArgumentBatch;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.functional.FunctionalInterfaces.SupplierWithException;
+import org.json.JSONObject;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
@@ -23,6 +24,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.gusdb.fgputil.functional.Functions.*;
+import static org.veupathdb.service.eda.us.Utils.mapIfPresent;
 
 /**
  * Performs all database operations for the user service
@@ -143,7 +145,7 @@ public class UserDataFactory {
       rs.getString(DV_COL_ENTITY_ID),
       rs.getString(DV_COL_DISPLAY_NAME),
       rs.getString(DV_COL_DESCRIPTION),
-      with(rs.getString(DV_COL_PROVENANCE), p -> mapException(() -> p == null ? null : Utils.JSON.readTree(p), EXCEPTION_HANDLER)),
+      mapIfPresent(rs.getString(DV_COL_PROVENANCE), raw -> new DerivedVariableProvenance(new JSONObject(raw))),
       rs.getString(DV_COL_FUNCTION_NAME),
       with(rs.getString(DV_COL_CONFIG), c -> mapException(() -> Utils.JSON.readTree(c), EXCEPTION_HANDLER))
     ), EXCEPTION_HANDLER);
@@ -321,7 +323,7 @@ public class UserDataFactory {
       row.getEntityID(),
       row.getDisplayName(),
       row.getDescription(),
-      row.getProvenance() == null ? null : row.getProvenance().toString(),
+      mapIfPresent(row.getProvenance(), p -> p.toJSONObject().toString()),
       row.getFunctionName(),
       row.getConfig().toString(),
     };
