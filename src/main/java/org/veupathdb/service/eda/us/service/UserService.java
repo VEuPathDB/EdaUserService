@@ -1,26 +1,21 @@
 package org.veupathdb.service.eda.us.service;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.NotFoundException;
+import java.util.*;
+
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.gusdb.fgputil.StringUtil;
+import org.veupathdb.lib.container.jaxrs.errors.UnprocessableEntityException;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.server.annotations.Authenticated;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.generated.resources.UsersUserId;
 import org.veupathdb.service.eda.us.Utils;
-import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
-import org.veupathdb.service.eda.us.model.IdGenerator;
-import org.veupathdb.service.eda.us.model.ProvenancePropsLookup;
-import org.veupathdb.service.eda.us.model.UserDataFactory;
+import org.veupathdb.service.eda.us.model.*;
 
-import static org.veupathdb.service.eda.us.Utils.checkMaxSize;
-import static org.veupathdb.service.eda.us.Utils.checkNonEmpty;
+import static org.gusdb.fgputil.functional.Functions.also;
+import static org.veupathdb.service.eda.us.Utils.*;
 
 @Authenticated(allowGuests = true)
 public class UserService implements UsersUserId {
@@ -121,6 +116,89 @@ public class UserService implements UsersUserId {
   public PostUsersAnalysesCopyByUserIdAndProjectIdAndAnalysisIdResponse postUsersAnalysesCopyByUserIdAndProjectIdAndAnalysisId(String userId, String projectId, String analysisId) {
     return PostUsersAnalysesCopyByUserIdAndProjectIdAndAnalysisIdResponse.respond200WithApplicationJson(
         ImportAnalysisService.importAnalysis(projectId, analysisId, Optional.of(userId), _request));
+  }
+
+  @Override
+  public GetUsersDerivedVariablesByUserIdAndProjectIdResponse getUsersDerivedVariablesByUserIdAndProjectId(String userId, String projectId) {
+    var user        = Utils.getAuthorizedUser(_request, userId);
+    var dataFactory = new UserDataFactory(projectId);
+    var resultRows  = dataFactory.getDerivedVariablesForUser(user.getUserID());
+
+    return GetUsersDerivedVariablesByUserIdAndProjectIdResponse.respond200WithApplicationJson(
+      resultRows.stream()
+        .map(DerivedVariableRow::toGetResponse)
+        .toList());
+  }
+
+  @Override
+  public PostUsersDerivedVariablesByUserIdAndProjectIdResponse postUsersDerivedVariablesByUserIdAndProjectId(
+    String userId,
+    String projectId,
+    DerivedVariablePostRequest entity
+  ) {
+    var user = Utils.getAuthorizedUser(_request, userId);
+    var dataFactory = new UserDataFactory(projectId);
+
+    validateDerivedVariablePostBody(entity);
+    Utils.requireSubsettingPermission(_request, entity.getDatasetId());
+
+    // TODO: validate entity ID!!  This will require a docker-compose change so
+    //  we can have access to the subsetting service URL.
+    //  https://github.com/VEuPathDB/EdaUserService/issues/31
+
+    var variableID = Utils.issueUUID();
+
+    dataFactory.addDerivedVariable(new DerivedVariableRow(variableID, user.getUserID(), entity));
+
+    return PostUsersDerivedVariablesByUserIdAndProjectIdResponse.respond200WithApplicationJson(also(new DerivedVariablePostResponseImpl(), res -> {
+      res.setVariableId(variableID);
+      res.setEntityId(entity.getEntityId());
+    }));
+  }
+
+  @Override
+  public GetUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse getUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableId(
+    String userId,
+    String projectId,
+    String derivedVariableId
+  ) {
+    var user = Utils.getAuthorizedUser(_request, userId);
+    var dataFactory = new UserDataFactory(projectId);
+    var variable = dataFactory.getDerivedVariableById(derivedVariableId).orElseThrow(NotFoundException::new);
+
+    if (variable.getUserID() != user.getUserID())
+      throw new ForbiddenException();
+
+    return GetUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse.respond200WithApplicationJson(variable.toGetResponse());
+  }
+
+  @Override
+  public PatchUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse patchUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableId(
+    String userId,
+    String projectId,
+    String derivedVariableId,
+    DerivedVariablePatchRequest entity
+  ) {
+    var user = Utils.getAuthorizedUser(_request, userId);
+    var dataFactory = new UserDataFactory(projectId);
+    var variable = dataFactory.getDerivedVariableById(derivedVariableId).orElseThrow(NotFoundException::new);
+
+    if (variable.getUserID() != user.getUserID())
+      throw new ForbiddenException();
+
+    var displayName = entity.getDisplayName() == null || entity.getDisplayName().isBlank()
+      ? variable.getDisplayName()
+      : entity.getDisplayName();
+    var description = entity.getDescription() == null
+      ? variable.getDescription()
+      : entity.getDescription();
+
+    checkMaxSize(DerivedVariableRow.MAX_DISPLAY_NAME_LENGTH, "displayName", displayName);
+    checkMaxSize(DerivedVariableRow.MAX_DESCRIPTION_LENGTH, "description", description);
+
+    dataFactory.patchDerivedVariable(derivedVariableId, displayName, description);
+
+    return PatchUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse.respond204();
   }
 
   private void performBulkDeletion(UserDataFactory dataFactory, User user, List<String> analysisIdsToDelete) {
@@ -254,6 +332,37 @@ public class UserService implements UsersUserId {
     newIDSet.addAll(oldIDs);
 
     return newIDSet.stream().toList();
+  }
+
+  private static void validateDerivedVariablePostBody(DerivedVariablePostRequest body) {
+    var errors = new HashMap<String, List<String>>();
+
+    if (isNullOrBlank(body.getDatasetId()))
+      errors.put("datasetId", List.of("field is required"));
+
+    if (isNullOrBlank(body.getEntityId()))
+      errors.put("entityId", List.of("field is required"));
+
+    if (isNullOrBlank(body.getDisplayName()))
+      errors.put("displayName", List.of("field is required"));
+    else if (body.getDisplayName().length() > DerivedVariableRow.MAX_DISPLAY_NAME_LENGTH)
+      errors.put("displayName", List.of("field must not be greater than 256 characters in length"));
+
+    if (isNullOrBlank(body.getFunctionName()))
+      errors.put("functionName", List.of("field is required"));
+
+    if (body.getConfig() == null)
+      errors.put("config", List.of("field is required"));
+    else if (!(body.getConfig() instanceof Map))
+      errors.put("config", List.of("field must be an object"));
+
+    if (isNullOrBlank(body.getDescription()))
+      body.setDescription(null);
+    else if (body.getDescription().length() > DerivedVariableRow.MAX_DESCRIPTION_LENGTH)
+      errors.put("description", List.of("field must not be greater than 4000 characters in length"));
+
+    if (!errors.isEmpty())
+      throw new UnprocessableEntityException(errors);
   }
 
 }

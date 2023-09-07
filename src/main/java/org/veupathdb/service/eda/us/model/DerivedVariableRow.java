@@ -6,22 +6,29 @@ import org.veupathdb.service.eda.generated.model.DerivedVariableGetResponseImpl;
 import org.veupathdb.service.eda.generated.model.DerivedVariablePostRequest;
 import org.veupathdb.service.eda.us.Utils;
 
+import java.time.OffsetDateTime;
+import java.util.Objects;
+
 import static org.gusdb.fgputil.functional.Functions.also;
+import static org.veupathdb.service.eda.us.Utils.mapIfPresent;
 
 /**
  * Represents a complete database row for a Derived Variable.
  */
 public class DerivedVariableRow {
 
-  private String variableID;
-  private long userID;
-  private String datasetID;
-  private String entityID;
-  private String displayName;
-  private String description;
-  private JsonNode provenance;
-  private String functionName;
-  private JsonNode config;
+  public static final int MAX_DISPLAY_NAME_LENGTH = 256;
+  public static final int MAX_DESCRIPTION_LENGTH = 4000;
+
+  private final String variableID;
+  private final long userID;
+  private final String datasetID;
+  private final String entityID;
+  private final String displayName;
+  private final String description;
+  private final DerivedVariableProvenance provenance;
+  private final String functionName;
+  private final JsonNode config;
 
   public DerivedVariableRow(
     String variableID,
@@ -30,32 +37,47 @@ public class DerivedVariableRow {
     String entityID,
     String displayName,
     String description,
-    JsonNode provenance,
+    DerivedVariableProvenance provenance,
     String functionName,
     JsonNode config
   ) {
-    this.variableID = variableID;
-    this.userID = userID;
-    this.datasetID = datasetID;
-    this.entityID = entityID;
-    this.displayName = displayName;
-    this.description = description;
-    this.provenance = provenance;
-    this.functionName = functionName;
-    this.config = config;
+    this.variableID   = Objects.requireNonNull(variableID);
+    this.userID       = userID;
+    this.datasetID    = Objects.requireNonNull(datasetID);
+    this.entityID     = Objects.requireNonNull(entityID);
+    this.displayName  = Objects.requireNonNull(displayName);
+    this.description  = description;
+    this.provenance   = provenance;
+    this.functionName = Objects.requireNonNull(functionName);
+    this.config       = Objects.requireNonNull(config);
   }
 
   public DerivedVariableRow(String variableID, long userID, DerivedVariablePostRequest request) {
-    this.variableID = variableID;
-    this.userID = userID;
-    this.datasetID = request.getDatasetId();
-    this.entityID = request.getEntityId();
-    this.displayName = request.getDisplayName();
-    this.description = request.getDescription();
-    this.provenance = request.getProvenance() == null ?
-      null : Utils.JSON.convertValue(request.getProvenance(), JsonNode.class);
-    this.functionName = request.getFunctionName();
-    this.config = Utils.JSON.convertValue(request.getConfig(), JsonNode.class);
+    this(
+      variableID,
+      userID,
+      request.getDatasetId(),
+      request.getEntityId(),
+      request.getDisplayName(),
+      request.getDescription(),
+      mapIfPresent(request.getProvenance(), DerivedVariableProvenance::new),
+      request.getFunctionName(),
+      Utils.JSON.convertValue(Objects.requireNonNull(request.getConfig()), JsonNode.class)
+    );
+  }
+
+  public DerivedVariableRow(String variableID, long userID, DerivedVariableRow copyFrom) {
+    this(
+      variableID,
+      userID,
+      copyFrom.datasetID,
+      copyFrom.entityID,
+      copyFrom.displayName,
+      copyFrom.description,
+      new DerivedVariableProvenance(OffsetDateTime.now(), copyFrom.variableID),
+      copyFrom.functionName,
+      copyFrom.config
+    );
   }
 
   public String getVariableID() {
@@ -82,7 +104,7 @@ public class DerivedVariableRow {
     return description;
   }
 
-  public JsonNode getProvenance() {
+  public DerivedVariableProvenance getProvenance() {
     return provenance;
   }
 
@@ -94,50 +116,15 @@ public class DerivedVariableRow {
     return config;
   }
 
-  public void setVariableID(String variableID) {
-    this.variableID = variableID;
-  }
-
-  public void setUserID(long userID) {
-    this.userID = userID;
-  }
-
-  public void setDatasetID(String datasetID) {
-    this.datasetID = datasetID;
-  }
-
-  public void setEntityID(String entityID) {
-    this.entityID = entityID;
-  }
-
-  public void setDisplayName(String displayName) {
-    this.displayName = displayName;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public void setProvenance(JsonNode provenance) {
-    this.provenance = provenance;
-  }
-
-  public void setFunctionName(String functionName) {
-    this.functionName = functionName;
-  }
-
-  public void setConfig(JsonNode config) {
-    this.config = config;
-  }
-
   public DerivedVariableGetResponse toGetResponse() {
     return also(new DerivedVariableGetResponseImpl(), out -> {
       out.setVariableId(variableID);
+      // out.setUserId(userID);
       out.setDatasetId(datasetID);
       out.setEntityId(entityID);
       out.setDisplayName(displayName);
       out.setDescription(description);
-      out.setProvenance(provenance);
+      out.setProvenance(mapIfPresent(provenance, DerivedVariableProvenance::toAPIType));
       out.setFunctionName(functionName);
       out.setConfig(config);
     });
