@@ -60,7 +60,7 @@ public class DerivedVariableRow {
       request.getEntityId(),
       request.getDisplayName(),
       request.getDescription(),
-      mapIfPresent(request.getProvenance(), DerivedVariableProvenance::new),
+      null,
       request.getFunctionName(),
       Utils.JSON.convertValue(Objects.requireNonNull(request.getConfig()), JsonNode.class)
     );
@@ -74,7 +74,7 @@ public class DerivedVariableRow {
       copyFrom.entityID,
       copyFrom.displayName,
       copyFrom.description,
-      new DerivedVariableProvenance(OffsetDateTime.now(), copyFrom.variableID),
+      copyFrom.provenance != null ? copyFrom.provenance : new DerivedVariableProvenance(OffsetDateTime.now(), copyFrom.variableID),
       copyFrom.functionName,
       copyFrom.config
     );
