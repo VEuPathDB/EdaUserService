@@ -202,7 +202,6 @@ types:
         type: string
         minLength: 0
         maxLength: 4000
-      provenance?: DerivedVariableProvenance
 
   DerivedVariablePostResponse:
     additionalProperties: false
@@ -212,12 +211,6 @@ types:
     additionalProperties: false
     type: DerivedVariableSpec
     properties:
-      # inherited:
-      #   entityId: string
-      #   variable: string
-      #   functionName: string
-      #   displayName: string
-      #   config: object
       datasetId: string
       description?:
         type: string
