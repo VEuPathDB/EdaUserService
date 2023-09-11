@@ -94,7 +94,7 @@ public class UserService implements UsersUserId {
     var newDerivedVars = processPatchedDerivedVars(user, dataFactory, analysis, originalDerivedVars, getDerivedVariables(analysis));
     if (!newDerivedVars.isEmpty()) {
       if (analysis.getDescriptor() == null)
-        analysis.setDescriptor(new AnalysisDescriptorImpl());
+        throw new IllegalStateException("analysis descriptor was null");
 
       analysis.getDescriptor().setDerivedVariables(newDerivedVars);
     }
