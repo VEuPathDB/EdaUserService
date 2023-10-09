@@ -70,6 +70,7 @@ types:
       displayRangeMax?: any
       vocabulary?: string[]
       imputeZero: boolean
+      hasStudyDependentVocabulary?: boolean
       isCollection: boolean
       members?: VariableSpec[]
   ComputedVariableMetadata:
@@ -212,6 +213,10 @@ types:
     properties:
       isRequired: boolean
       isTemporal: boolean
+      isCollection: boolean
+      isCompositional: boolean
+      isProportion: boolean
+      allowedNormalizationMethods: string[]
       minNumVars: number
       maxNumVars: number
       minNumValues: number
@@ -372,6 +377,8 @@ types:
       isMergeKey: boolean
       isMultiValued: boolean
       imputeZero: boolean
+      hasStudyDependentVocabulary?: boolean
+      variableSpecToImputeZeroesFor?: VariableSpec
   API_VariableType:
     type: string
     enum:
