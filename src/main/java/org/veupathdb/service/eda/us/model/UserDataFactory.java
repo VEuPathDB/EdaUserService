@@ -5,8 +5,10 @@ import jakarta.ws.rs.NotFoundException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.ArrayUtil;
+import org.gusdb.fgputil.db.runner.BasicArgumentBatch;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.functional.FunctionalInterfaces.SupplierWithException;
+import org.json.JSONObject;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.service.eda.generated.model.*;
 import org.veupathdb.service.eda.us.Resources;
@@ -17,14 +19,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.gusdb.fgputil.functional.Functions.mapException;
+import static org.gusdb.fgputil.functional.Functions.*;
+import static org.veupathdb.service.eda.us.Utils.mapIfPresent;
 
 /**
  * Performs all database operations for the user service
@@ -36,6 +36,7 @@ public class UserDataFactory {
   private static final String SCHEMA_MACRO = "$SCHEMA$";
   private static final String TABLE_USERS = SCHEMA_MACRO + "users";
   private static final String TABLE_ANALYSIS = SCHEMA_MACRO + "analysis";
+  private static final String TABLE_DERIVED_VARS = SCHEMA_MACRO + "derived_variables";
 
   // constants for analysis table columns
   private static final String COL_ANALYSIS_ID = "analysis_id"; // varchar(50) not null,
@@ -120,6 +121,215 @@ public class UserDataFactory {
     LOG.error(e.getMessage(), e);
     throw new RuntimeException("Unable to complete requested operation", e);
   };
+
+  /***************************************************************************************
+   *** Select Multiple Derived Variables
+   **************************************************************************************/
+
+  private static final String
+    DV_COL_VARIABLE_ID   = "variable_id",
+    DV_COL_USER_ID       = "user_id",
+    DV_COL_DATASET_ID    = "dataset_id",
+    DV_COL_ENTITY_ID     = "entity_id",
+    DV_COL_DISPLAY_NAME  = "display_name",
+    DV_COL_DESCRIPTION   = "description",
+    DV_COL_PROVENANCE    = "provenance",
+    DV_COL_FUNCTION_NAME = "function_name",
+    DV_COL_CONFIG        = "config";
+
+  private static DerivedVariableRow resultSetToDVRow(ResultSet rs) {
+    return mapException(() -> new DerivedVariableRow(
+      rs.getString(DV_COL_VARIABLE_ID),
+      rs.getLong(DV_COL_USER_ID),
+      rs.getString(DV_COL_DATASET_ID),
+      rs.getString(DV_COL_ENTITY_ID),
+      rs.getString(DV_COL_DISPLAY_NAME),
+      rs.getString(DV_COL_DESCRIPTION),
+      mapIfPresent(rs.getString(DV_COL_PROVENANCE), raw -> new DerivedVariableProvenance(new JSONObject(raw))),
+      rs.getString(DV_COL_FUNCTION_NAME),
+      with(rs.getString(DV_COL_CONFIG), c -> mapException(() -> Utils.JSON.readTree(c), EXCEPTION_HANDLER))
+    ), EXCEPTION_HANDLER);
+  }
+
+  /**
+   * Prefix SQL for bulk selecting derived variables by ID.
+   *
+   * <p>
+   * Note the apostrophe at the end of the SQL prefix.
+   * </p>
+   */
+  // language=Oracle
+  private static final String BULK_SELECT_DERIVED_VARS_PREFIX =
+    "SELECT variable_id, user_id, dataset_id, entity_id, display_name, "
+      + "description, provenance, function_name, config FROM "
+      + TABLE_DERIVED_VARS + " WHERE variable_id IN ('";
+
+  /**
+   * Suffix SQL for bulk selecting derived variables by ID.
+   *
+   * <p>
+   * Note the apostrophe at the beginning of this SQL suffix.
+   * </p>
+   */
+  private static final String BULK_SELECT_DERIVED_VARS_SUFFIX = "')";
+
+  /**
+   * Returns a list of {@link DerivedVariableRow} instances matching the list of
+   * given input IDs.  If an input ID does not match a row in the database, no
+   * row for that ID will be returned.
+   *
+   * <p>
+   * <b>WARNING</b>: An SQL exception will be thrown if the given input list of
+   * IDs contains more than {@code 1000} elements.
+   * </p>
+   *
+   * @param ids List of derived variable IDs for the rows to look up.
+   * <br>
+   * THIS LIST MUST BE VALIDATED BEFOREHAND TO PREVENT SQL INJECTION!  Derived
+   * variable IDs must be UUID values.
+   *
+   * @return A list of {@link DerivedVariableRow} instances that were found to
+   * match one of the given input IDs.  This list will be at most the same size
+   * as the input list of IDs, but may be smaller.
+   */
+  public List<DerivedVariableRow> getDerivedVariables(Collection<String> ids) {
+    var sql = addSchema(ids.stream()
+      .collect(Collectors.joining("','", BULK_SELECT_DERIVED_VARS_PREFIX, BULK_SELECT_DERIVED_VARS_SUFFIX)));
+
+    LOG.debug("Bulk derived variable lookup for {} derived vars using the query {}", ids.size(), sql);
+
+    return mapException(() -> new SQLRunner(Resources.getUserDataSource(), sql)
+      .executeQuery(rs -> {
+        var out = new ArrayList<DerivedVariableRow>(ids.size());
+
+        while (rs.next())
+          out.add(resultSetToDVRow(rs));
+
+        return out;
+      }), EXCEPTION_HANDLER);
+  }
+
+  /***************************************************************************************
+   *** Patch Derived Variable
+   **************************************************************************************/
+
+  // language=Oracle
+  private static final String PATCH_DERIVED_VAR_SQL =
+    "UPDATE " + TABLE_DERIVED_VARS + " SET display_name = ?, description = ? WHERE variable_id = ?";
+
+  public void patchDerivedVariable(String variableId, String displayName, String description) {
+    mapException(() -> {
+      LOG.debug("Patching derived variable # " + variableId);
+      new SQLRunner(Resources.getUserDataSource(), addSchema(PATCH_DERIVED_VAR_SQL))
+        .executeUpdate(
+          new Object[]{ displayName, description, variableId },
+          new Integer[]{ Types.VARCHAR, Types.CLOB, Types.VARCHAR }
+        );
+    }, EXCEPTION_HANDLER);
+  }
+
+  /***************************************************************************************
+   *** Select Derived Variable
+   **************************************************************************************/
+
+  public Optional<DerivedVariableRow> getDerivedVariableById(String variableId) {
+    return with(getDerivedVariables(List.of(variableId)), list -> list.isEmpty() ? Optional.empty() : Optional.of(list.get(0)));
+  }
+
+  /***************************************************************************************
+   *** Select Derived Variables By User
+   **************************************************************************************/
+
+  // language=Oracle
+  private static final String SELECT_DERIVED_VAR_BY_USER_SQL =
+    "SELECT variable_id, user_id, dataset_id, entity_id, display_name, "
+      + "description, provenance, function_name, config FROM "
+      + TABLE_DERIVED_VARS + " WHERE user_id = ?";
+
+  public List<DerivedVariableRow> getDerivedVariablesForUser(long userID) {
+    return mapException(() -> {
+      LOG.debug("Looking up derived variables for user " + userID);
+      return new SQLRunner(Resources.getUserDataSource(), addSchema(SELECT_DERIVED_VAR_BY_USER_SQL))
+        .executeQuery(
+          new Object[]{ userID },
+          new Integer[]{ Types.BIGINT },
+          rs -> {
+            var out = new ArrayList<DerivedVariableRow>();
+
+            while (rs.next())
+              out.add(resultSetToDVRow(rs));
+
+            return out;
+          }
+        );
+    }, EXCEPTION_HANDLER);
+  }
+
+  /***************************************************************************************
+   *** Insert Derived Variable
+   **************************************************************************************/
+
+  // language=Oracle
+  private static final String INSERT_DERIVED_VAR_SQL =
+    "INSERT INTO " + TABLE_DERIVED_VARS + "(variable_id, user_id, dataset_id, "
+      + "entity_id, display_name, description, provenance, function_name,"
+      + "config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+  private static final Integer[] INSERT_DERIVED_VAR_TYPES = {
+    Types.VARCHAR,     // variable_id
+    Types.BIGINT,      // user_id
+    Types.VARCHAR,     // dataset_id
+    Types.VARCHAR,     // entity_id
+    Types.VARCHAR,     // display_name
+    Types.CLOB,        // description
+    Types.CLOB,        // provenance
+    Types.VARCHAR,     // function_name
+    Types.CLOB,        // config
+  };
+
+  /**
+   * Converts the given {@link DerivedVariableRow} to an array of objects
+   * suitable to be fed to the {@code INSERT_DERIVED_VAR_SQL} query.
+   *
+   * @param row Row to be converted.
+   *
+   * @return Object array containing the given row's fields in the order
+   * expected by the {@code INSERT_DERIVED_VAR_SQL} query.
+   */
+  private static Object[] derivedVarToInsertRow(DerivedVariableRow row) {
+    return new Object[] {
+      row.getVariableID(),
+      row.getUserID(),
+      row.getDatasetID(),
+      row.getEntityID(),
+      row.getDisplayName(),
+      row.getDescription(),
+      mapIfPresent(row.getProvenance(), p -> p.toJSONObject().toString()),
+      row.getFunctionName(),
+      row.getConfig().toString(),
+    };
+  }
+
+  public void addDerivedVariable(DerivedVariableRow derivedVariable) {
+    LOG.debug("Insert derived variable # " + derivedVariable.getVariableID());
+
+    mapException(() -> {
+      new SQLRunner(Resources.getUserDataSource(), addSchema(INSERT_DERIVED_VAR_SQL))
+        .executeUpdate(derivedVarToInsertRow(derivedVariable), INSERT_DERIVED_VAR_TYPES);
+    }, EXCEPTION_HANDLER);
+  }
+
+  public void addDerivedVariables(Collection<DerivedVariableRow> rows) {
+    LOG.debug("Bulk inserting {} derived variable rows", rows.size());
+
+    mapException(() -> {
+      new SQLRunner(Resources.getUserDataSource(), addSchema(INSERT_DERIVED_VAR_SQL))
+        .executeStatementBatch(also(new BasicArgumentBatch(), bab -> {
+          bab.setParameterTypes(INSERT_DERIVED_VAR_TYPES);
+          rows.forEach(row -> bab.add(derivedVarToInsertRow(row)));
+        }));
+    }, EXCEPTION_HANDLER);
+  }
 
   /***************************************************************************************
    *** Insert user

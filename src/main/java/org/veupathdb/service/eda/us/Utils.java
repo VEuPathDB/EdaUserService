@@ -3,10 +3,12 @@ package org.veupathdb.service.eda.us;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.sql.Timestamp;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -14,12 +16,16 @@ import jakarta.ws.rs.NotFoundException;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.gusdb.fgputil.FormatUtil;
 import org.gusdb.fgputil.json.JsonUtil;
+import org.json.JSONObject;
 import org.veupathdb.lib.container.jaxrs.model.User;
 import org.veupathdb.lib.container.jaxrs.providers.UserProvider;
+import org.veupathdb.service.eda.common.client.DatasetAccessClient;
 import org.veupathdb.service.eda.us.model.AnalysisDetailWithUser;
 import org.veupathdb.service.eda.us.model.UserDataFactory;
 
 public class Utils {
+
+  public static final ObjectMapper JSON = new ObjectMapper();
 
   public static User getActiveUser(ContainerRequest request) {
     return UserProvider.lookupUser(request).orElseThrow(() ->
@@ -77,6 +83,10 @@ public class Utils {
     }
   }
 
+  public static String issueUUID() {
+    return UUID.randomUUID().toString();
+  }
+
   public static String formatObject(Object obj) {
     try {
       return JsonUtil.Jackson.writeValueAsString(obj);
@@ -98,5 +108,53 @@ public class Utils {
       throw new BadRequestException(key + " must not be larger than " + maxSize + " bytes.");
     }
     return value;
+  }
+
+  public static boolean isNullOrBlank(String value) {
+    return value == null || value.isBlank();
+  }
+
+  public static boolean isNullOrEmpty(Collection<?> values) {
+    return values == null || values.isEmpty();
+  }
+
+  public static <T, R> R mapIfPresent(T value, Function<T, R> mapper) {
+    return value == null ? null : mapper.apply(value);
+  }
+
+  public static <T> void callIfPresent(T value, Consumer<T> fn) {
+    if (value != null)
+      fn.accept(value);
+  }
+
+  public static <T> T orElse(T value, T fallback) {
+    return value == null ? fallback : value;
+  }
+
+  public static void requireSubsettingPermission(ContainerRequest request, String datasetID) {
+    try {
+      var info = new DatasetAccessClient(
+        Resources.DATASET_ACCESS_SERVICE_URL,
+        UserProvider.getSubmittedAuth(request).orElseThrow()
+      )
+        .getStudyPermsByDatasetId(datasetID);
+
+      if (!info.getStudyAccess().allowSubsetting()) {
+        throw new ForbiddenException(new JSONObject()
+          .put("denialReason", "noAccess")
+          .put("message", "The requesting user does not have access to this study.")
+          .put("datasetId", datasetID)
+          .put("isUserDataset", info.isUserStudy())
+          .toString()
+        );
+      }
+    } catch (NotFoundException e) {
+      // per https://github.com/VEuPathDB/EdaUserService/issues/24 if dataset under the study does not exist, throw Forbidden
+      throw new ForbiddenException(new JSONObject()
+        .put("denialReason", "missingDataset")
+        .put("message", "This analysis cannot be imported because the underlying dataset '" + datasetID + "' no longer exists.")
+        .put("datasetId", datasetID)
+        .toString());
+    }
   }
 }
