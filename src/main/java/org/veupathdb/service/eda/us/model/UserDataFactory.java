@@ -232,27 +232,8 @@ public class UserDataFactory {
    *** Select Derived Variable
    **************************************************************************************/
 
-  // language=Oracle
-  private static final String SELECT_DERIVED_VAR_SQL =
-    "SELECT variable_id, user_id, dataset_id, entity_id, display_name, "
-      + "description, provenance, function_name, config FROM "
-      + TABLE_DERIVED_VARS + " WHERE variable_id = ?";
-
   public Optional<DerivedVariableRow> getDerivedVariableById(String variableId) {
-    return mapException(() -> {
-      LOG.debug("Looking up derived variable # " + variableId);
-      return new SQLRunner(Resources.getUserDataSource(), addSchema(SELECT_DERIVED_VAR_SQL))
-        .executeQuery(
-          new Object[]{ variableId },
-          new Integer[]{ Types.VARCHAR },
-          rs -> {
-            if (!rs.next())
-              return Optional.empty();
-
-            return Optional.of(resultSetToDVRow(rs));
-          }
-        );
-    }, EXCEPTION_HANDLER);
+    return with(getDerivedVariables(List.of(variableId)), list -> list.isEmpty() ? Optional.empty() : Optional.of(list.get(0)));
   }
 
   /***************************************************************************************
