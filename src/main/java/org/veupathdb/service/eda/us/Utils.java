@@ -70,7 +70,7 @@ public class Utils {
 
   public static void verifyOwnership(long userId, AnalysisDetailWithUser analysis) {
     if (userId != analysis.getUserId()) {
-      throw new NotFoundException();
+      throw new ForbiddenException();
     }
   }
 
