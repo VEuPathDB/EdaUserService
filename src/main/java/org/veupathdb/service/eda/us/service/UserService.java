@@ -27,7 +27,7 @@ public class UserService implements UsersUserId {
   public GetUsersPreferencesByUserIdAndProjectIdResponse getUsersPreferencesByUserIdAndProjectId(String userId, String projectId) {
     UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
-    String prefs = dataFactory.readPreferences(user.getUserID());
+    String prefs = dataFactory.readPreferences(user.getUserId());
     return GetUsersPreferencesByUserIdAndProjectIdResponse.respond200WithApplicationJson(prefs);
   }
 
@@ -36,14 +36,14 @@ public class UserService implements UsersUserId {
     UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
     dataFactory.addUserIfAbsent(user);
-    dataFactory.writePreferences(user.getUserID(), entity);
+    dataFactory.writePreferences(user.getUserId(), entity);
     return PutUsersPreferencesByUserIdAndProjectIdResponse.respond202();
   }
 
   @Override
   public GetUsersAnalysesByUserIdAndProjectIdResponse getUsersAnalysesByUserIdAndProjectId(String userId, String projectId) {
     UserDataFactory dataFactory = new UserDataFactory(projectId);
-    List<AnalysisSummary> summaries = dataFactory.getAnalysisSummaries(Utils.getAuthorizedUser(_request, userId).getUserID());
+    List<AnalysisSummary> summaries = dataFactory.getAnalysisSummaries(Utils.getAuthorizedUser(_request, userId).getUserId());
     ProvenancePropsLookup.assignCurrentProvenanceProps(dataFactory, summaries);
     return GetUsersAnalysesByUserIdAndProjectIdResponse.respond200WithApplicationJson(summaries);
   }
@@ -54,7 +54,7 @@ public class UserService implements UsersUserId {
     User user = Utils.getAuthorizedUser(_request, userId);
     dataFactory.addUserIfAbsent(user);
     AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(
-        IdGenerator.getNextAnalysisId(dataFactory), user.getUserID(), entity);
+        IdGenerator.getNextAnalysisId(dataFactory), user.getUserId(), entity);
     dataFactory.insertAnalysis(newAnalysis);
     return PostUsersAnalysesByUserIdAndProjectIdResponse.respond200WithApplicationJson(newAnalysis.getIdObject());
   }
@@ -73,7 +73,7 @@ public class UserService implements UsersUserId {
     UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
     AnalysisDetailWithUser analysis = dataFactory.getAnalysisById(analysisId);
-    Utils.verifyOwnership(user.getUserID(), analysis);
+    Utils.verifyOwnership(user.getUserId(), analysis);
     ProvenancePropsLookup.assignCurrentProvenanceProps(dataFactory, List.of(analysis));
     return GetUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse.respond200WithApplicationJson(analysis);
   }
@@ -83,7 +83,7 @@ public class UserService implements UsersUserId {
     UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
     AnalysisDetailWithUser analysis = dataFactory.getAnalysisById(analysisId);
-    Utils.verifyOwnership(user.getUserID(), analysis);
+    Utils.verifyOwnership(user.getUserId(), analysis);
 
     // Store off a reference to the original derived variable ID list to use to
     // compare to the potential new list later.
@@ -107,7 +107,7 @@ public class UserService implements UsersUserId {
   public DeleteUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse deleteUsersAnalysesByUserIdAndProjectIdAndAnalysisId(String userId, String projectId, String analysisId) {
     UserDataFactory dataFactory = new UserDataFactory(projectId);
     User user = Utils.getAuthorizedUser(_request, userId);
-    Utils.verifyOwnership(dataFactory, user.getUserID(), analysisId);
+    Utils.verifyOwnership(dataFactory, user.getUserId(), analysisId);
     dataFactory.deleteAnalyses(analysisId);
     return DeleteUsersAnalysesByUserIdAndProjectIdAndAnalysisIdResponse.respond202();
   }
@@ -122,7 +122,7 @@ public class UserService implements UsersUserId {
   public GetUsersDerivedVariablesByUserIdAndProjectIdResponse getUsersDerivedVariablesByUserIdAndProjectId(String userId, String projectId) {
     var user        = Utils.getAuthorizedUser(_request, userId);
     var dataFactory = new UserDataFactory(projectId);
-    var resultRows  = dataFactory.getDerivedVariablesForUser(user.getUserID());
+    var resultRows  = dataFactory.getDerivedVariablesForUser(user.getUserId());
 
     return GetUsersDerivedVariablesByUserIdAndProjectIdResponse.respond200WithApplicationJson(
       resultRows.stream()
@@ -148,7 +148,7 @@ public class UserService implements UsersUserId {
 
     var variableID = Utils.issueUUID();
 
-    dataFactory.addDerivedVariable(new DerivedVariableRow(variableID, user.getUserID(), entity));
+    dataFactory.addDerivedVariable(new DerivedVariableRow(variableID, user.getUserId(), entity));
 
     return PostUsersDerivedVariablesByUserIdAndProjectIdResponse.respond200WithApplicationJson(also(new DerivedVariablePostResponseImpl(), res -> {
       res.setVariableId(variableID);
@@ -166,7 +166,7 @@ public class UserService implements UsersUserId {
     var dataFactory = new UserDataFactory(projectId);
     var variable = dataFactory.getDerivedVariableById(derivedVariableId).orElseThrow(NotFoundException::new);
 
-    if (variable.getUserID() != user.getUserID())
+    if (variable.getUserID() != user.getUserId())
       throw new ForbiddenException();
 
     return GetUsersDerivedVariablesByUserIdAndProjectIdAndDerivedVariableIdResponse.respond200WithApplicationJson(variable.toGetResponse());
@@ -183,7 +183,7 @@ public class UserService implements UsersUserId {
     var dataFactory = new UserDataFactory(projectId);
     var variable = dataFactory.getDerivedVariableById(derivedVariableId).orElseThrow(NotFoundException::new);
 
-    if (variable.getUserID() != user.getUserID())
+    if (variable.getUserID() != user.getUserId())
       throw new ForbiddenException();
 
     var displayName = entity.getDisplayName() == null || entity.getDisplayName().isBlank()
@@ -206,7 +206,7 @@ public class UserService implements UsersUserId {
       return;
     try {
       String[] idArray = analysisIdsToDelete.toArray(new String[0]);
-      Utils.verifyOwnership(dataFactory, user.getUserID(), idArray);
+      Utils.verifyOwnership(dataFactory, user.getUserId(), idArray);
       dataFactory.deleteAnalyses(idArray);
     }
     catch (NotFoundException nfe) {
@@ -221,7 +221,7 @@ public class UserService implements UsersUserId {
     if (user.isGuest())
       throw new BadRequestException("Guest users cannot inherit analyses.");
     dataFactory.addUserIfAbsent(user);
-    dataFactory.transferGuestAnalysesOwnership(guestUserId, user.getUserID());
+    dataFactory.transferGuestAnalysesOwnership(guestUserId, user.getUserId());
   }
 
   private static void editAnalysis(User user, AnalysisDetail analysis, SingleAnalysisPatchRequest entity) {
@@ -318,7 +318,7 @@ public class UserService implements UsersUserId {
     // Verify that the derived variables that the client requested all belong to
     // the target user and study.
     for (var derivedVariableRow : dbDerivedVars) {
-      if (derivedVariableRow.getUserID() != user.getUserID())
+      if (derivedVariableRow.getUserID() != user.getUserId())
         throw new BadRequestException("one or more of the given derived variable IDs does not belong to the target user");
 
       if (!derivedVariableRow.getDatasetID().equals(analysis.getStudyId()))
