@@ -345,12 +345,12 @@ public class UserDataFactory {
       // need to use format vs prepared statement for first two macros since they are in a select
       String sql = String.format(
           addSchema(INSERT_USER_SQL),
-          user.getUserID(),
+          user.getUserId(),
           Resources.getUserPlatform().convertBoolean(user.isGuest()),
-          user.getUserID());
+          user.getUserId());
       LOG.debug("Trying to insert user with SQL: " + sql);
       int newRows = new SQLRunner(Resources.getUserDataSource(), sql, "insert-user").executeUpdate();
-      LOG.debug(newRows == 0 ? "User with ID " + user.getUserID() + " already present." : "New user inserted.");
+      LOG.debug(newRows == 0 ? "User with ID " + user.getUserId() + " already present." : "New user inserted.");
     }, EXCEPTION_HANDLER);
   }
 

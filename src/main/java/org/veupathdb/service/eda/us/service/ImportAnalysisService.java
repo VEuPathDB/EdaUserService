@@ -79,12 +79,12 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
     dataFactory.addUserIfAbsent(newOwner);
     AccountDbData.AccountDataPair provenanceOwner = new AccountDbData().getUserDataById(userId);
     AnalysisDetailWithUser newAnalysis = new AnalysisDetailWithUser(
-        IdGenerator.getNextAnalysisId(dataFactory), newOwner.getUserID(), oldAnalysis, provenanceOwner);
+        IdGenerator.getNextAnalysisId(dataFactory), newOwner.getUserId(), oldAnalysis, provenanceOwner);
 
     // If the owner ID has changed (meaning we are copying to a new user) AND we
     // have some derived variables attached to the analysis, copy the derived
     // variables from the old owner to the new owner.
-    if (newOwner.getUserID() != userId && !isNullOrEmpty(newAnalysis.getDescriptor().getDerivedVariables())) {
+    if (newOwner.getUserId() != userId && !isNullOrEmpty(newAnalysis.getDescriptor().getDerivedVariables())) {
       newAnalysis.getDescriptor().setDerivedVariables(copyDerivedVariables(
         dataFactory,
         newOwner,
@@ -105,7 +105,7 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
     var originalVars = dataFactory.getDerivedVariables(originalDerivedVarsIds);
 
     // Fetch all the derived variables owned by the target user.
-    var newOwnerVars = dataFactory.getDerivedVariablesForUser(newOwner.getUserID());
+    var newOwnerVars = dataFactory.getDerivedVariablesForUser(newOwner.getUserId());
 
     // Build an index of the derived variables that the new owner already has
     // or has a copy of.
@@ -147,7 +147,7 @@ public class ImportAnalysisService implements ImportAnalysisProjectId {
       // variable is new to newOwner.  Create a copy of it for newOwner and add
       // it to the list for return vars.
       var newDerivedVarId = issueUUID();
-      dataFactory.addDerivedVariable(new DerivedVariableRow(newDerivedVarId, newOwner.getUserID(), oldDerivedVar));
+      dataFactory.addDerivedVariable(new DerivedVariableRow(newDerivedVarId, newOwner.getUserId(), oldDerivedVar));
       newDerivedVarIdList.add(newDerivedVarId);
     }
 

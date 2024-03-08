@@ -35,7 +35,7 @@ public class Utils {
 
   public static User getAuthorizedUser(ContainerRequest request, String resourceUserId) {
     User activeUser = getActiveUser(request);
-    if (!String.valueOf(activeUser.getUserID()).equals(resourceUserId)) {
+    if (!String.valueOf(activeUser.getUserId()).equals(resourceUserId)) {
       throw new ForbiddenException();
     }
     return activeUser;
